@@ -1,4 +1,5 @@
 name: Publish install link
+# Publishes web/ to https://probro321.github.io/App/
 
 on:
   push:
