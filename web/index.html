@@ -1312,12 +1312,12 @@ function renderEverything(){
 
 /* ---------- offline copy ---------- */
 function checkServer(){
-  if(IN_APP||!("serviceWorker" in navigator))return;
+  if(!("serviceWorker" in navigator)||location.hostname==="appassets.androidplatform.net")return;
   fetch("sw.js?ping="+Date.now(),{cache:"no-store"})
     .then(r=>{$("offbar").classList.toggle("hidden",r.ok);})
     .catch(()=>$("offbar").classList.remove("hidden"));
 }
-if(!IN_APP&&"serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost"))
+if("serviceWorker" in navigator&&location.hostname!=="appassets.androidplatform.net"&&(location.protocol==="https:"||location.hostname==="localhost"))
   navigator.serviceWorker.register("sw.js").catch(()=>{});
 
 /* ---------- boot ---------- */
