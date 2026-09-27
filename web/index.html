@@ -241,14 +241,6 @@
   .offbar{position:fixed;top:0;left:0;right:0;z-index:95;background:#2a2410;color:var(--amber);font-size:12px;font-weight:600;
     text-align:center;padding:7px 12px;border-bottom:1px solid #4a3d14;}
 
-  /* launch screen (test update) */
-  #splash{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;flex-direction:column;
-    align-items:center;justify-content:center;gap:28px;transition:opacity .4s ease;}
-  #splash.gone{opacity:0;pointer-events:none;}
-  #splash h1{font-size:34px;font-weight:800;margin:0;letter-spacing:-.01em;}
-  .spinner{width:56px;height:56px;border-radius:50%;border:5px solid var(--line);border-top-color:var(--brand);
-    animation:spin .9s linear infinite;}
-  @keyframes spin{to{transform:rotate(360deg)}}
   @media (prefers-reduced-motion: reduce){
     *,*::before,*::after{animation:none!important;transition:none!important;}
   }
@@ -264,7 +256,6 @@
 </style>
 </head>
 <body>
-<div id="splash"><h1 id="splashText">Updating…</h1><div class="spinner"></div></div>
 <div class="app">
 
   <!-- HOME -->
@@ -1321,8 +1312,6 @@ if("serviceWorker" in navigator&&location.hostname!=="appassets.androidplatform.
   navigator.serviceWorker.register("sw.js").catch(()=>{});
 
 /* ---------- boot ---------- */
-$("splashText").textContent=lang()==="he"?"מתעדכן…":"Updating…";
-setTimeout(()=>{const sp=$("splash");sp.classList.add("gone");setTimeout(()=>sp.remove(),450);},2500);
 viewCard=state.cards[0].id;
 applyStatic();
 renderHome();
