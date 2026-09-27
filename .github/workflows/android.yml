@@ -37,7 +37,12 @@ jobs:
         working-directory: android
         env:
           VERSION_CODE: ${{ github.run_number }}
-        run: gradle assembleRelease --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          if ! gradle assembleRelease --no-daemon 2>&1 | tee build.log; then
+            grep -E "error:|\.java:[0-9]+|What went wrong" -A2 build.log | head -40 | while IFS= read -r line; do echo "::error::$line"; done
+            exit 1
+          fi
 
       - name: Name the file
         run: cp android/app/build/outputs/apk/release/app-release.apk Wallet.apk
