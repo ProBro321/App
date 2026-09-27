@@ -1,0 +1,50 @@
+plugins {
+    id 'com.android.application'
+}
+
+def buildNumber = (System.getenv("VERSION_CODE") ?: "1") as Integer
+
+android {
+    namespace 'com.probro.wallet'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.probro.wallet'
+        minSdk 24
+        targetSdk 34
+        versionCode buildNumber
+        versionName "1.0.${buildNumber}"
+    }
+
+    // One fixed signing key, so every new version installs over the old one
+    // (Android refuses updates signed with a different key).
+    signingConfigs {
+        wallet {
+            storeFile file('../wallet.keystore')
+            storePassword 'walletapp'
+            keyAlias 'wallet'
+            keyPassword 'walletapp'
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.wallet
+        }
+        debug {
+            signingConfig signingConfigs.wallet
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.11.0'
+}
