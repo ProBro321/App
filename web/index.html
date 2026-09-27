@@ -368,6 +368,7 @@
     <h4 data-t="dangerZone">Danger zone</h4>
     <button class="ghostbtn danger" id="resetBtn" data-t="resetAll">Reset everything</button>
     <button class="ghostbtn" id="saveSettings" style="margin-top:16px;font-weight:800" data-t="done">Done</button>
+    <div class="privacy" id="buildTag" style="margin-top:4px">Version __BUILD__</div>
   </div>
 </div>
 
@@ -1308,8 +1309,12 @@ function checkServer(){
     .then(r=>{$("offbar").classList.toggle("hidden",r.ok);})
     .catch(()=>$("offbar").classList.remove("hidden"));
 }
-if("serviceWorker" in navigator&&location.hostname!=="appassets.androidplatform.net"&&(location.protocol==="https:"||location.hostname==="localhost"))
-  navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker" in navigator&&location.hostname!=="appassets.androidplatform.net"&&(location.protocol==="https:"||location.hostname==="localhost")){
+  const hadWorker=!!navigator.serviceWorker.controller;
+  // When a newer version installs itself, switch to it right away.
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadWorker&&!window.__reloaded){window.__reloaded=true;location.reload();}});
+  navigator.serviceWorker.register("sw.js").then(r=>r.update()).catch(()=>{});
+}
 
 /* ---------- boot ---------- */
 viewCard=state.cards[0].id;
