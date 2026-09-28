@@ -9,11 +9,33 @@ android {
     compileSdk 34
 
     defaultConfig {
-        applicationId 'com.probro.wallet'
         minSdk 24
         targetSdk 34
         versionCode buildNumber
         versionName "1.0.${buildNumber}"
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    // Two apps from one codebase. Each loads its own page and updates live from GitHub.
+    flavorDimensions "app"
+    productFlavors {
+        wallet {
+            dimension "app"
+            applicationId 'com.probro.wallet'
+            resValue "string", "app_name", "Wallet"
+            buildConfigField "String", "APP_URL", '"https://probro321.github.io/App/"'
+            buildConfigField "boolean", "MIGRATE_OLD", "true"
+        }
+        anime {
+            dimension "app"
+            applicationId 'com.probro.animelist'
+            resValue "string", "app_name", "Anime List"
+            buildConfigField "String", "APP_URL", '"https://probro321.github.io/App/anime/"'
+            buildConfigField "boolean", "MIGRATE_OLD", "false"
+        }
     }
 
     // One fixed signing key, so every new version installs over the old one

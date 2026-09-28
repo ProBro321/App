@@ -1,5 +1,5 @@
-/* Wallet offline copy: network first (so updates arrive), saved copy when offline or the server is off */
-const CACHE="wallet-offline-v4";
+/* Anime List offline copy: network first (so updates arrive), saved copy when offline or the server is off */
+const CACHE="anime-offline-v1";
 const PAGE=new URL("./",self.registration.scope).href;
 const ASSETS=["./","manifest.webmanifest","icons/icon-192.png","icons/icon-512.png"].map(p=>new URL(p,self.registration.scope).href);
 self.addEventListener("install",e=>{
@@ -11,7 +11,6 @@ self.addEventListener("activate",e=>e.waitUntil(
 self.addEventListener("fetch",e=>{
   const req=e.request,url=new URL(req.url);
   if(req.method!=="GET"||url.origin!==location.origin||url.searchParams.has("ping"))return;
-  if(url.pathname.startsWith(new URL("anime/",self.registration.scope).pathname))return; // separate app, has its own worker
   const key=req.mode==="navigate"?PAGE:req.url.split("?")[0];
   // Ask for the page with a unique address so no server cache can hand back an old version.
   const fresh=req.mode==="navigate"?fetch(PAGE+"?fresh="+Date.now(),{cache:"no-store",credentials:"same-origin"}):fetch(req,{cache:"no-store"});

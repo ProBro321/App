@@ -33,7 +33,7 @@ public class MainActivity extends Activity {
     private static final int REQ_OPEN = 1;
     private static final int REQ_SAVE = 2;
     private static final String APP_HOST = "probro321.github.io";
-    private static final String APP_URL = "https://probro321.github.io/App/";
+    private static final String APP_URL = BuildConfig.APP_URL;
     private static final String OLD_URL = "https://appassets.androidplatform.net/assets/index.html";
     private static final String KEY = "darkgames_wallet_v2";
 
@@ -128,7 +128,7 @@ public class MainActivity extends Activity {
 
         if (savedInstanceState != null) {
             web.restoreState(savedInstanceState);
-        } else if (!prefs.getBoolean("migrated", false)) {
+        } else if (BuildConfig.MIGRATE_OLD && !prefs.getBoolean("migrated", false)) {
             readingOld = true;          // first launch of this version: pick up the old data
             web.loadUrl(OLD_URL);
         } else {

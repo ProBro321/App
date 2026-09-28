@@ -28,39 +28,46 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Put the web app inside the Android app
+      - name: Put the old Wallet copy inside Wallet (used once to move data)
         run: |
-          mkdir -p android/app/src/main/assets
-          cp web/index.html android/app/src/main/assets/index.html
+          mkdir -p android/app/src/wallet/assets
+          cp web/index.html android/app/src/wallet/assets/index.html
 
-      - name: Build the APK
+      - name: Build both apps
         working-directory: android
         env:
           VERSION_CODE: ${{ github.run_number }}
         run: |
           set -o pipefail
-          if ! gradle assembleRelease --no-daemon 2>&1 | tee build.log; then
+          if ! gradle assembleWalletRelease assembleAnimeRelease --no-daemon 2>&1 | tee build.log; then
             grep -E "error:|\.java:[0-9]+|What went wrong" -A2 build.log | head -40 | while IFS= read -r line; do echo "::error::$line"; done
             exit 1
           fi
 
-      - name: Name the file
-        run: cp android/app/build/outputs/apk/release/app-release.apk Wallet.apk
+      - name: Name the files
+        run: |
+          cp android/app/build/outputs/apk/wallet/release/app-wallet-release.apk Wallet.apk
+          cp android/app/build/outputs/apk/anime/release/app-anime-release.apk AnimeList.apk
 
       - name: Keep a copy on the run page
         uses: actions/upload-artifact@v4
         with:
-          name: Wallet-apk
-          path: Wallet.apk
+          name: apps
+          path: |
+            Wallet.apk
+            AnimeList.apk
 
       - name: Publish to the download link
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: Wallet app
+          name: Wallet + Anime List apps
           make_latest: true
           overwrite_files: true
-          files: Wallet.apk
+          files: |
+            Wallet.apk
+            AnimeList.apk
           body: |
-            **Download:** tap `Wallet.apk` below, open it, and allow "Install unknown apps" when Android asks.
+            **Download:** tap `Wallet.apk` or `AnimeList.apk` below, open it, and allow "Install unknown apps" when Android asks.
+            Both apps update themselves from GitHub after you install them once.
             Version 1.0.${{ github.run_number }}. Updates install over the old version and keep your data.

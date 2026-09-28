@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0c0a12">
+<title>Anime & Manga List</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  :root{
+    --bg:#0c0a12;--surface:#17141f;--raised:#201c2b;--line:#2d2839;--track:#352f45;
+    --text:#f4f1f8;--muted:#948ea3;--muted2:#655f74;
+    --brand:#ff4f8b;--brand-dim:#c2185b;--brand-soft:rgba(255,79,139,.15);
+    --watching:#4fa3ff;--completed:#33d9a0;--plan:#a594ff;--hold:#f5b54c;--dropped:#ff6b5b;--gold:#ffc94d;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);}
+  body{min-height:100vh;-webkit-font-smoothing:antialiased;}
+  body.locked{overflow:hidden;}
+  input,select,textarea,button{font-family:var(--sans);}
+  .num{font-variant-numeric:tabular-nums;}
+  .hidden{display:none!important;}
+  .app{max-width:520px;margin:0 auto;padding:0 0 100px;min-height:100vh;}
+  .view{padding:18px 16px 8px;animation:viewIn .24s ease both;}
+  @keyframes viewIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .chip,.navbtn,.fab,.iconbtn,.ghostbtn,.plus1,.scorebtn,.ep,.row,.tcell{transition:transform .14s ease,background-color .18s,border-color .18s,color .18s,opacity .18s;}
+  .chip:active,.iconbtn:active,.ghostbtn:active,.plus1:active,.scorebtn:active,.ep:active{transform:scale(.93);}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 14px;}
+  .topbar h1{font-size:24px;font-weight:850;margin:0;letter-spacing:-.02em;}
+  .topbar h1 span{color:var(--brand);}
+  .iconbtn{width:40px;height:40px;border-radius:13px;border:1px solid var(--line);background:var(--surface);color:var(--muted);
+    display:grid;place-items:center;cursor:pointer;font-size:17px;flex:0 0 40px;}
+
+  .strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 12px 10px;}
+  .tile .v{font-size:22px;font-weight:850;letter-spacing:-.02em;}
+  .tile .k{font-size:11.5px;color:var(--muted);margin-top:2px;}
+
+  .search{position:relative;margin-bottom:10px;}
+  .search input{width:100%;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:15px;
+    padding:13px 40px 13px 40px;font-size:15px;}
+  .search input:focus{outline:none;border-color:var(--brand);}
+  .search span{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--muted2);pointer-events:none;}
+  .search button{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--muted);font-size:16px;padding:8px;cursor:pointer;}
+
+  .chiprow{display:flex;gap:7px;overflow-x:auto;padding:2px 1px 4px;margin-bottom:8px;scrollbar-width:none;}
+  .chiprow::-webkit-scrollbar{display:none;}
+  .chip{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:8px 13px;border-radius:13px;
+    font-size:13px;font-weight:650;cursor:pointer;white-space:nowrap;}
+  .chip.on{border-color:var(--brand);color:var(--text);background:var(--brand-soft);}
+  .chip small{opacity:.7;margin-left:4px;font-weight:600;}
+
+  /* list rows */
+  .row{display:flex;gap:12px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:12px;}
+  .row:active{background:var(--surface);}
+  .cover{width:50px;height:70px;border-radius:10px;flex:0 0 50px;overflow:hidden;background:var(--raised);position:relative;
+    display:grid;place-items:center;font-weight:850;font-size:18px;color:#fff;}
+  .cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
+  .rmid{flex:1;min-width:0;}
+  .rtitle{font-weight:750;font-size:14.5px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .rsub{font-size:12px;color:var(--muted);margin-top:3px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  .dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+  .star{color:var(--gold);font-weight:800;}
+  .prog{margin-top:6px;}
+  .pbar{height:5px;border-radius:4px;background:var(--track);overflow:hidden;}
+  .pbar i{display:block;height:100%;background:var(--watching);border-radius:4px;transition:width .4s cubic-bezier(.22,.9,.3,1);}
+  .ptxt{font-size:11.5px;color:var(--muted);margin-top:4px;}
+  .warn{color:var(--hold);font-weight:700;}
+  .plus1{border:1px solid var(--brand);background:var(--brand-soft);color:var(--text);font-weight:800;border-radius:12px;
+    padding:9px 11px;font-size:13px;cursor:pointer;flex:0 0 auto;white-space:nowrap;}
+  .empty{text-align:center;color:var(--muted);padding:40px 16px;font-size:14px;line-height:1.5;}
+  .more{display:block;margin:14px auto;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:13px;padding:11px 18px;font-weight:700;cursor:pointer;}
+
+  /* top 10 */
+  .trow{display:flex;gap:12px;align-items:center;padding:10px 6px;border-bottom:1px solid var(--line);}
+  .rank{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-weight:900;font-size:16px;flex:0 0 34px;background:var(--raised);color:var(--muted);}
+  .rank.r1{background:linear-gradient(160deg,#ffe082,#ffb300);color:#3a2600;}
+  .rank.r2{background:linear-gradient(160deg,#eceff1,#b0bec5);color:#263238;}
+  .rank.r3{background:linear-gradient(160deg,#ffcc80,#d9822b);color:#3e1f00;}
+  .ord{display:flex;flex-direction:column;gap:4px;}
+  .ord button{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:9px;width:32px;height:26px;cursor:pointer;font-size:12px;}
+  .ord button:disabled{opacity:.3;}
+  .sectitle{font-size:13px;color:var(--muted);font-weight:750;margin:22px 4px 6px;}
+
+  /* stats */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px;}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:14px;}
+  .panel h4{margin:0 0 10px;font-size:14px;}
+  .brow{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12.5px;}
+  .brow .lb{width:34px;color:var(--muted);text-align:right;flex:0 0 34px;}
+  .brow .bt{flex:1;height:14px;background:var(--raised);border-radius:4px;overflow:hidden;}
+  .brow .bt i{display:block;height:100%;border-radius:0 4px 4px 0;background:var(--brand);}
+  .brow .ct{width:34px;color:var(--text);font-weight:700;flex:0 0 34px;}
+
+  /* nav */
+  .navbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(12,10,18,.93);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);}
+  .navin{max-width:520px;margin:0 auto;display:flex;align-items:center;justify-content:space-around;padding:9px 8px 12px;}
+  .navbtn{border:0;background:transparent;color:var(--muted2);display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:650;cursor:pointer;padding:4px 8px;flex:1;}
+  .navbtn .ic{font-size:20px;}
+  .navbtn.on{color:var(--brand);}
+  .fab{width:56px;height:56px;border-radius:50%;background:linear-gradient(160deg,var(--brand),var(--brand-dim));color:#fff;font-size:28px;border:0;cursor:pointer;
+    box-shadow:0 8px 22px rgba(255,79,139,.42);margin-top:-26px;flex:0 0 56px;display:grid;place-items:center;}
+  .fab:active{transform:scale(.92);}
+
+  /* sheets */
+  .sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:60;display:none;align-items:flex-end;transition:background-color .3s;}
+  .sheet-overlay.on{background:rgba(0,0,0,.62);}
+  #addSheet{z-index:65;}
+  .sheet{width:100%;max-width:520px;margin:0 auto;background:var(--bg);border-radius:26px 26px 0 0;border:1px solid var(--line);border-bottom:none;
+    max-height:92vh;overflow:auto;padding:4px 16px 30px;transform:translateY(100%);transition:transform .34s cubic-bezier(.32,.72,0,1);overscroll-behavior:contain;}
+  .sheet-overlay.on .sheet{transform:none;}
+  .sheet-overlay.dragging .sheet{transition:none;}
+  .grabber{display:flex;justify-content:center;padding:10px 0 12px;touch-action:none;cursor:grab;}
+  .grabber i{width:40px;height:5px;border-radius:3px;background:var(--line);}
+  .sheet h3{font-size:19px;font-weight:850;margin:0 0 14px;touch-action:none;}
+  .sheet h4{font-size:12.5px;color:var(--muted);margin:18px 0 8px;font-weight:750;}
+  .mini{font-size:12px;color:var(--muted2);line-height:1.45;margin:-4px 0 10px;}
+  .field{width:100%;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:14px;padding:13px 14px;font-size:15px;}
+  .field:focus{outline:none;border-color:var(--brand);}
+  textarea.field{min-height:84px;resize:vertical;line-height:1.4;}
+  .ghostbtn{width:100%;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:14px;padding:13px;font-weight:750;font-size:14px;cursor:pointer;margin-bottom:9px;}
+  .ghostbtn.brand{border-color:var(--brand);color:var(--brand);}
+  .ghostbtn.solid{background:var(--brand);border-color:var(--brand);color:#fff;}
+  .ghostbtn.danger{border-color:var(--dropped);color:var(--dropped);}
+
+  /* detail */
+  .dhead{display:flex;gap:14px;align-items:flex-start;margin-bottom:12px;}
+  .dhead .cover{width:86px;height:122px;flex:0 0 86px;border-radius:14px;font-size:30px;}
+  .dtitle{width:100%;background:transparent;border:1px solid transparent;color:var(--text);font-size:19px;font-weight:850;border-radius:10px;padding:4px 6px;margin:-4px -6px 6px;resize:none;line-height:1.25;}
+  .dtitle:focus{outline:none;border-color:var(--line);background:var(--surface);}
+  .seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px;}
+  .seg button{flex:1;border:0;background:transparent;color:var(--muted);padding:7px 4px;border-radius:9px;font-weight:700;font-size:12.5px;cursor:pointer;}
+  .seg button.on{background:var(--raised);color:var(--text);}
+  .scores{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;}
+  .scorebtn{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:10px;padding:10px 0;font-weight:800;font-size:14px;cursor:pointer;}
+  .scorebtn.on{background:var(--gold);border-color:var(--gold);color:#3a2600;}
+  .scorebtn.fill{border-color:rgba(255,201,77,.55);color:var(--gold);}
+  .toprow{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 14px;margin-top:10px;font-weight:700;font-size:14px;cursor:pointer;}
+  .toprow.on{border-color:var(--gold);background:rgba(255,201,77,.1);}
+  .eprow{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+  .eprow .field{flex:0 0 96px;padding:10px 12px;text-align:center;}
+  .eprow .lbl{font-size:13px;color:var(--muted);font-weight:650;}
+  .epbtns{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;}
+  .epbtns button{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:11px;padding:9px 12px;font-weight:700;font-size:13px;cursor:pointer;}
+  .epbtns button.on{border-color:var(--brand);background:var(--brand-soft);}
+  .epgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:6px;}
+  .ep{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:11px;height:44px;font-weight:800;font-size:14px;cursor:pointer;}
+  .ep.on{background:var(--completed);border-color:var(--completed);color:#04241a;}
+  .ep.next{border-color:var(--brand);color:var(--text);box-shadow:inset 0 0 0 1px var(--brand);}
+  .ep.gap{border-color:var(--hold);color:var(--hold);}
+  .ep.pop{animation:eppop .35s cubic-bezier(.22,1.5,.4,1);}
+  @keyframes eppop{0%{transform:scale(.8)}100%{transform:none}}
+  .epsum{font-size:13px;color:var(--muted);margin:2px 0 10px;}
+  .dates{font-size:12px;color:var(--muted2);margin-top:10px;line-height:1.6;}
+  .malres{display:flex;gap:10px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:13px;margin-bottom:7px;cursor:pointer;background:var(--surface);}
+  .malres .cover{width:40px;height:56px;flex:0 0 40px;border-radius:8px;font-size:14px;}
+  .malres .t{font-weight:750;font-size:13.5px;line-height:1.25;}
+  .malres .s{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .spinner{width:26px;height:26px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--brand);animation:spin .8s linear infinite;margin:18px auto;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  #okPop{position:fixed;inset:0;z-index:150;display:grid;place-items:center;pointer-events:none;}
+  #okPop div{width:96px;height:96px;border-radius:50%;background:var(--completed);color:#04241a;font-size:46px;font-weight:900;display:grid;place-items:center;opacity:0;transform:scale(.4);}
+  #okPop.on div{animation:okpop .8s cubic-bezier(.22,1.4,.4,1) both;}
+  @keyframes okpop{0%{opacity:0;transform:scale(.4)}35%{opacity:1;transform:scale(1.08)}60%{transform:scale(1)}100%{opacity:0}}
+  .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%) translateY(16px);z-index:99;background:var(--raised);border:1px solid var(--line);
+    color:var(--text);font-size:13.5px;display:flex;align-items:center;gap:14px;padding:12px 16px;border-radius:14px;opacity:0;transition:opacity .22s,transform .22s;
+    pointer-events:none;max-width:90%;box-shadow:0 10px 26px rgba(0,0,0,.45);}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast.on.act{pointer-events:auto;}
+  .toast button{border:0;background:transparent;color:var(--brand);font-weight:850;font-size:14px;cursor:pointer;white-space:nowrap;}
+  #toastMsg{white-space:pre-line;}
+  input[type=file]{display:none;}
+  .ver{font-size:11.5px;color:var(--muted2);text-align:center;margin-top:8px;}
+  @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important;}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- LIST -->
+  <div class="view" id="view-list">
+    <div class="topbar"><h1>My <span>List</span></h1><button class="iconbtn" id="gear" aria-label="Settings">⚙</button></div>
+    <div class="strip" id="strip"></div>
+    <div class="search"><span>⌕</span><input id="q" type="search" placeholder="Search your list" autocomplete="off"><button id="qClear" class="hidden" aria-label="Clear">✕</button></div>
+    <div class="chiprow" id="statusChips"></div>
+    <div class="chiprow" id="typeChips"></div>
+    <div id="list"></div>
+  </div>
+
+  <!-- TOP 10 -->
+  <div class="view hidden" id="view-top">
+    <div class="topbar"><h1>My <span>Top 10</span></h1></div>
+    <div class="mini" style="margin:0 4px 10px">Reorder with the arrows. Tap ⭐ inside any show to add it.</div>
+    <div id="topList"></div>
+    <div id="topSuggest"></div>
+  </div>
+
+  <!-- STATS -->
+  <div class="view hidden" id="view-stats">
+    <div class="topbar"><h1>My <span>Stats</span></h1></div>
+    <div id="statsBody"></div>
+  </div>
+</div>
+
+<div class="navbar"><div class="navin">
+  <button class="navbtn on" data-nav="list"><span class="ic">📺</span>List</button>
+  <button class="navbtn" data-nav="top"><span class="ic">🏆</span>Top 10</button>
+  <button class="fab" id="fab" aria-label="Add">+</button>
+  <button class="navbtn" data-nav="stats"><span class="ic">📊</span>Stats</button>
+  <button class="navbtn" id="navSettings"><span class="ic">⚙</span>Settings</button>
+</div></div>
+
+<!-- DETAIL -->
+<div class="sheet-overlay" id="detailSheet"><div class="sheet">
+  <div class="grabber" id="detailGrab"><i></i></div>
+  <div id="detailBody"></div>
+</div></div>
+
+<!-- ADD -->
+<div class="sheet-overlay" id="addSheet"><div class="sheet">
+  <div class="grabber" id="addGrab"><i></i></div>
+  <h3>Add to your list</h3>
+  <div class="seg" id="addKind" style="margin-bottom:10px"><button data-k="anime" class="on">Anime</button><button data-k="manga">Manga</button></div>
+  <input class="field" id="addQ" type="search" placeholder="Type a name — e.g. Frieren" autocomplete="off" style="margin-bottom:10px">
+  <div class="chiprow" id="addAs"></div>
+  <div id="addResults"></div>
+</div></div>
+
+<!-- SETTINGS -->
+<div class="sheet-overlay" id="setSheet"><div class="sheet">
+  <div class="grabber" id="setGrab"><i></i></div>
+  <h3>Settings</h3>
+  <h4>Covers &amp; episode counts</h4>
+  <div class="mini">Looks up every show without a cover on MyAnimeList, one at a time. Keep the app open while it runs.</div>
+  <button class="ghostbtn brand" id="fillBtn">Fill in covers from MyAnimeList</button>
+  <h4>Paste a list</h4>
+  <div class="mini">One title per line. Add a number at the end for episodes watched, like “Frieren 12”. Everything goes in as Watching unless you pick another status.</div>
+  <textarea class="field" id="pasteBox" placeholder="Frieren 12&#10;Dandadan&#10;Solo Leveling"></textarea>
+  <div class="chiprow" id="pasteAs" style="margin-top:8px"></div>
+  <button class="ghostbtn" id="pasteBtn">Add these</button>
+  <h4>Backup</h4>
+  <button class="ghostbtn" id="exportBtn">↓ Export backup file</button>
+  <button class="ghostbtn" id="importBtn">↑ Import backup file</button>
+  <h4>Danger zone</h4>
+  <button class="ghostbtn danger" id="resetBtn">Erase everything</button>
+  <button class="ghostbtn" id="setDone" style="margin-top:12px">Done</button>
+  <div class="ver">Version __BUILD__</div>
+</div></div>
+
+<input type="file" id="importFile" accept="application/json,.json">
+<div id="okPop"><div>✓</div></div>
+<div class="toast" id="toast"><span id="toastMsg"></span><button id="toastAct" class="hidden"></button></div>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const KEY="animelist_v1";
+const DAY=86400000;
+const IN_APP=!!window.AndroidBridge;
+const STATUSES=[
+  {k:"watching",label:"Watching",mlabel:"Reading",c:"var(--watching)"},
+  {k:"completed",label:"Completed",c:"var(--completed)"},
+  {k:"plan",label:"Plan to watch",mlabel:"Plan to read",c:"var(--plan)"},
+  {k:"hold",label:"On hold",c:"var(--hold)"},
+  {k:"dropped",label:"Dropped",c:"var(--dropped)"}
+];
+const TYPES=["Anime","Movie","Manga"];
+const stInfo=k=>STATUSES.find(s=>s.k===k)||STATUSES[0];
+const stLabel=(k,type)=>{const s=stInfo(k);return type==="Manga"&&s.mlabel?s.mlabel:s.label;};
+const unit=type=>type==="Manga"?"Ch":"Ep";
+const unitLong=type=>type==="Manga"?"chapters":"episodes";
+function id(){return Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);}
+function escapeHtml(s){return String(s==null?"":s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
+function norm(t){return String(t||"").toLowerCase().replace(/[’‘]/g,"'").replace(/[^a-z0-9֐-׿぀-ヿ一-鿿]/g,"");}
+
+/* ---------- storage ---------- */
+function fresh(){return {app:"animelist",v:1,items:[],top:[],setup:true};}
+function normalize(s){
+  if(!s||!Array.isArray(s.items))s=fresh();
+  if(!Array.isArray(s.top))s.top=[];
+  s.items.forEach(it=>{
+    if(!it.id)it.id=id();
+    if(!TYPES.includes(it.type))it.type="Anime";
+    if(!STATUSES.some(x=>x.k===it.status))it.status="completed";
+    it.score=it.score>=1&&it.score<=10?Math.round(it.score):null;
+    it.total=it.total>0?Math.floor(it.total):null;
+    it.w=typeof it.w==="string"?it.w:"";
+    if(!it.addedAt)it.addedAt=Date.now();
+  });
+  const ids=new Set(s.items.map(x=>x.id));
+  s.top=s.top.filter(x=>ids.has(x)).slice(0,10);
+  return s;
+}
+let state=load();
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.items)return normalize(s);}catch(e){}return fresh();}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast("Couldn't save — storage is full or blocked");}}
+const byId=x=>state.items.find(i=>i.id===x);
+
+/* ---------- episode sets ("1-6,8") ---------- */
+function parseW(str){
+  const set=new Set();
+  String(str||"").split(",").forEach(p=>{
+    const m=p.trim().match(/^(\d+)(?:-(\d+))?$/);if(!m)return;
+    const a=+m[1],b=m[2]?+m[2]:a;for(let n=Math.min(a,b);n<=Math.max(a,b)&&n<=20000;n++)set.add(n);
+  });
+  return set;
+}
+function fmtW(set){
+  const a=[...set].filter(n=>n>0).sort((x,y)=>x-y);const out=[];
+  for(let i=0;i<a.length;i++){let j=i;while(j+1<a.length&&a[j+1]===a[j]+1)j++;out.push(a[i]===a[j]?""+a[i]:a[i]+"-"+a[j]);i=j;}
+  return out.join(",");
+}
+function progress(it){
+  const set=parseW(it.w);
+  const done=it.status==="completed"&&it.total&&set.size===0?it.total:set.size;
+  let next=1;while(set.has(next))next++;
+  const max=set.size?Math.max(...set):0;
+  const gap=set.size&&next<max?next:null;
+  const finished=it.total?(next>it.total):false;
+  return {set,done,next:finished?null:next,gap,max};
+}
+function watchedCount(it){
+  if(it.type==="Movie")return it.status==="completed"?1:0;
+  const p=progress(it);
+  if(it.status==="completed"&&it.total)return it.total;
+  return p.done;
+}
+
+/* ---------- covers ---------- */
+function hue(s){let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))%360;return h;}
+function initials(t){
+  const w=String(t).replace(/[^\p{L}\p{N} ]/gu,"").split(/\s+/).filter(Boolean);
+  return ((w[0]||"?")[0]+((w[1]||"")[0]||"")).toUpperCase();
+}
+function coverHtml(it){
+  const h=hue(it.title);
+  const bg=`linear-gradient(150deg,hsl(${h} 55% 42%),hsl(${(h+40)%360} 60% 24%))`;
+  const ini=escapeHtml(initials(it.title));
+  if(it.cover)return `<div class="cover" style="background:${bg}">${ini}<img src="${escapeHtml(it.cover)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()"></div>`;
+  return `<div class="cover" style="background:${bg}">${ini}</div>`;
+}
+
+/* ---------- navigation ---------- */
+let view="list";
+function goto(v){
+  view=v;
+  document.querySelectorAll(".view").forEach(el=>el.classList.add("hidden"));
+  $("view-"+v).classList.remove("hidden");
+  document.querySelectorAll(".navbtn[data-nav]").forEach(b=>b.classList.toggle("on",b.dataset.nav===v));
+  render();window.scrollTo(0,0);
+}
+document.querySelectorAll(".navbtn[data-nav]").forEach(b=>b.onclick=()=>goto(b.dataset.nav));
+function render(){
+  if(view==="list")renderList();
+  if(view==="top")renderTop();
+  if(view==="stats")renderStats();
+  if(detailId)renderDetail();
+}
+
+/* ---------- LIST ---------- */
+let fStatus="watching",fType="all",sortBy="recent",query="",shown=60;
+function mkChip(label,on,fn,count){
+  const c=document.createElement("div");c.className="chip"+(on?" on":"");
+  c.innerHTML=escapeHtml(label)+(count!=null?`<small>${count}</small>`:"");c.onclick=fn;return c;
+}
+function filtered(){
+  const q=norm(query);
+  let list=state.items.filter(it=>(fType==="all"||it.type===fType)&&(q?norm(it.title).includes(q)||norm(it.note).includes(q):(fStatus==="all"||it.status===fStatus)));
+  const recentTs=it=>Math.max(it.updatedAt||0,it.completedAt||0,it.startedAt||0,it.addedAt||0);
+  if(sortBy==="recent")list.sort((a,b)=>recentTs(b)-recentTs(a));
+  else if(sortBy==="az")list.sort((a,b)=>a.title.localeCompare(b.title));
+  else list.sort((a,b)=>(b.score||0)-(a.score||0)||a.title.localeCompare(b.title));
+  return list;
+}
+function renderList(){
+  const n=k=>state.items.filter(i=>i.status===k).length;
+  const eps=state.items.reduce((a,it)=>a+(it.type!=="Movie"&&it.type!=="Manga"?watchedCount(it):0),0);
+  $("strip").innerHTML=`
+    <div class="tile"><div class="v num">${n("watching")}</div><div class="k">Watching</div></div>
+    <div class="tile"><div class="v num">${n("completed")}</div><div class="k">Completed</div></div>
+    <div class="tile"><div class="v num">${eps.toLocaleString("en-US")}</div><div class="k">Episodes logged</div></div>`;
+  const sc=$("statusChips");sc.innerHTML="";
+  [...STATUSES.map(s=>[s.k,s.label]),["all","All"]].forEach(([k,l])=>
+    sc.appendChild(mkChip(l,fStatus===k&&!query,()=>{fStatus=k;shown=60;renderList();},k==="all"?state.items.length:n(k))));
+  sc.classList.toggle("hidden",!!query);
+  const tc=$("typeChips");tc.innerHTML="";
+  [["all","All types"],["Anime","Anime"],["Movie","Movies"],["Manga","Manga"]].forEach(([k,l])=>tc.appendChild(mkChip(l,fType===k,()=>{fType=k;shown=60;renderList();})));
+  const sep=document.createElement("div");sep.style.cssText="flex:0 0 1px;background:var(--line);margin:4px 2px";tc.appendChild(sep);
+  [["recent","Recent"],["score","Score"],["az","A–Z"]].forEach(([k,l])=>tc.appendChild(mkChip("↕ "+l,sortBy===k,()=>{sortBy=k;renderList();})));
+
+  const L=$("list");L.innerHTML="";
+  if(!state.items.length){
+    L.innerHTML=`<div class="empty">Your list is empty.<br>Import your backup file, or add your first show with +.</div>`;
+    const b=document.createElement("button");b.className="ghostbtn brand";b.textContent="↑ Import backup file";b.onclick=()=>$("importFile").click();L.appendChild(b);
+    return;
+  }
+  const list=filtered();
+  if(!list.length){L.innerHTML=`<div class="empty">${query?"Nothing matches “"+escapeHtml(query)+"”.":"Nothing here yet."}</div>`;return;}
+  list.slice(0,shown).forEach(it=>L.appendChild(row(it)));
+  if(list.length>shown){
+    const m=document.createElement("button");m.className="more";m.textContent=`Show ${Math.min(60,list.length-shown)} more (${list.length-shown} left)`;
+    m.onclick=()=>{shown+=60;renderList();};L.appendChild(m);
+  }
+}
+function row(it){
+  const r=document.createElement("div");r.className="row";
+  const st=stInfo(it.status),p=progress(it);
+  let prog="";
+  if(it.type!=="Movie"&&(it.status==="watching"||it.status==="hold"||(it.status==="plan"&&p.done))){
+    const pct=it.total?Math.min(100,p.done/it.total*100):0;
+    const txt=p.max?`${unit(it.type)} ${p.max}${it.total?" / "+it.total:""}${p.next?` · next ${p.next}`:""}`:`Not started${it.total?" · "+it.total+" "+unitLong(it.type):""}`;
+    prog=`<div class="prog">${it.total?`<div class="pbar"><i style="width:${pct}%"></i></div>`:""}
+      <div class="ptxt num">${txt}${p.gap?` · <span class="warn">⚠ skipped ${unit(it.type).toLowerCase()} ${p.gap}</span>`:""}</div></div>`;
+  }
+  const inTop=state.top.indexOf(it.id);
+  r.innerHTML=`${coverHtml(it)}
+    <div class="rmid">
+      <div class="rtitle">${inTop>=0?`<span style="color:var(--gold)">#${inTop+1}</span> `:""}${escapeHtml(it.title)}</div>
+      <div class="rsub"><span class="dot" style="background:${st.c}"></span>${stLabel(it.status,it.type)} · ${it.type}${it.score?` · <span class="star">★ ${it.score}</span>`:""}</div>
+      ${prog}
+    </div>
+    ${(it.status==="watching"||it.status==="plan")&&it.type!=="Movie"&&p.next?`<button class="plus1">+1 ${unit(it.type)}</button>`:""}`;
+  r.onclick=()=>openDetail(it.id);
+  const pb=r.querySelector(".plus1");
+  if(pb)pb.onclick=e=>{e.stopPropagation();plusOne(it);};
+  return r;
+}
+function plusOne(it){
+  const p=progress(it);if(!p.next)return;
+  const set=p.set;set.add(p.next);it.w=fmtW(set);
+  if(it.status==="plan"){it.status="watching";it.startedAt=it.startedAt||Date.now();}
+  touch(it);
+  if(!finishCheck(it))toast(`${escapeHtml(it.title).slice(0,40)}: ${unit(it.type).toLowerCase()} ${p.next} ✓`);
+  save();render();
+}
+function touch(it){it.updatedAt=Date.now();}
+function finishCheck(it){
+  if(!it.total||it.status==="completed")return false;
+  const p=progress(it);
+  if(p.done>=it.total){it.status="completed";it.completedAt=Date.now();okPop();toast("🎉 Completed "+it.title);return true;}
+  return false;
+}
+$("q").oninput=e=>{query=e.target.value;$("qClear").classList.toggle("hidden",!query);shown=60;renderList();};
+$("qClear").onclick=()=>{query="";$("q").value="";$("qClear").classList.add("hidden");renderList();};
+
+/* ---------- DETAIL ---------- */
+let detailId=null,upToMode=false,epPage=0;
+function openDetail(x){detailId=x;upToMode=false;epPage=-1;renderDetail();openSheet($("detailSheet"));}
+function closeDetail(){detailId=null;closeSheet($("detailSheet"));render();}
+function renderDetail(){
+  const it=byId(detailId);if(!it){closeDetail();return;}
+  const B=$("detailBody");const p=progress(it);const U=unit(it.type);
+  const topIdx=state.top.indexOf(it.id);
+  const scroll=$("detailSheet").querySelector(".sheet").scrollTop;
+  B.innerHTML=`
+    <div class="dhead">${coverHtml(it)}
+      <div style="flex:1;min-width:0">
+        <textarea class="dtitle" id="dTitle" rows="2">${escapeHtml(it.title)}</textarea>
+        <div class="seg" id="dType">${TYPES.map(tp=>`<button data-t="${tp}" class="${it.type===tp?"on":""}">${tp}</button>`).join("")}</div>
+      </div></div>
+    <div class="chiprow" id="dStatus"></div>
+    <h4>Your score</h4>
+    <div class="scores" id="dScore">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="scorebtn ${it.score===n?"on":it.score&&n<it.score?"fill":""}" data-n="${n}">${n}</button>`).join("")}</div>
+    <div class="toprow ${topIdx>=0?"on":""}" id="dTop"><span>⭐ ${topIdx>=0?"In your Top 10 — #"+(topIdx+1):"Add to my Top 10"}</span><span>${topIdx>=0?"Remove":"Add"}</span></div>
+    ${it.type==="Movie"?"":`
+    <h4>${it.type==="Manga"?"Chapters":"Episodes"}</h4>
+    <div class="eprow"><span class="lbl">Total</span><input class="field num" id="dTotal" type="number" inputmode="numeric" min="0" placeholder="?" value="${it.total||""}">
+      <span class="lbl" style="flex:1;text-align:right">${p.done} watched</span></div>
+    <div class="epsum" id="dEpSum"></div>
+    <div class="epbtns">
+      ${p.next?`<button id="dNext">+1 · ${U} ${p.next}</button>`:""}
+      <button id="dUpTo" class="${upToMode?"on":""}">Tap = up to here</button>
+      ${it.total?`<button id="dAll">Mark all</button>`:""}
+      <button id="dClear">Clear</button>
+    </div>
+    <div class="chiprow" id="dPages"></div>
+    <div class="epgrid" id="dGrid"></div>`}
+    <h4>Notes</h4>
+    <textarea class="field" id="dNote" placeholder="What did you think?">${escapeHtml(it.note||"")}</textarea>
+    <h4>MyAnimeList</h4>
+    <button class="ghostbtn" id="dMal">${it.cover?"Change cover / info":"Find cover & "+unitLong(it.type)}</button>
+    <div id="dMalRes"></div>
+    <button class="ghostbtn danger" id="dDel" style="margin-top:6px">Delete from list</button>
+    <div class="dates">${it.startedAt?"Started "+fmtDate(it.startedAt)+"<br>":""}${it.completedAt?"Completed "+fmtDate(it.completedAt)+"<br>":""}Added ${fmtDate(it.addedAt)}</div>`;
+
+  const sc=$("dStatus");
+  STATUSES.forEach(s=>sc.appendChild(mkChip(stLabel(s.k,it.type),it.status===s.k,()=>setStatus(it,s.k))));
+  $("dTitle").onchange=e=>{const v=e.target.value.replace(/\s+/g," ").trim();if(v){it.title=v;touch(it);save();}};
+  $("dType").querySelectorAll("button").forEach(b=>b.onclick=()=>{it.type=b.dataset.t;touch(it);save();renderDetail();});
+  $("dScore").querySelectorAll("button").forEach(b=>b.onclick=()=>{const n=+b.dataset.n;it.score=it.score===n?null:n;touch(it);save();renderDetail();});
+  $("dTop").onclick=()=>toggleTop(it);
+  $("dNote").onchange=e=>{it.note=e.target.value;touch(it);save();};
+  $("dMal").onclick=()=>malPickFor(it);
+  $("dDel").onclick=()=>deleteItem(it);
+  if(it.type!=="Movie"){
+    $("dTotal").onchange=e=>{const v=parseInt(e.target.value);it.total=v>0?v:null;touch(it);if(!finishCheck(it)){}save();renderDetail();};
+    if($("dNext"))$("dNext").onclick=()=>{plusOne(it);renderDetail();};
+    $("dUpTo").onclick=()=>{upToMode=!upToMode;renderDetail();};
+    if($("dAll"))$("dAll").onclick=()=>{const s=new Set();for(let n=1;n<=it.total;n++)s.add(n);it.w=fmtW(s);touch(it);finishCheck(it);save();renderDetail();};
+    $("dClear").onclick=()=>{const old=it.w;it.w="";touch(it);save();renderDetail();toast("Cleared",{label:"Undo",fn:()=>{it.w=old;save();renderDetail();}});};
+    renderEpisodes(it);
+  }
+  $("detailSheet").querySelector(".sheet").scrollTop=scroll;
+}
+function renderEpisodes(it){
+  const p=progress(it);const U=unit(it.type);
+  $("dEpSum").innerHTML=p.gap?`<span class="warn">⚠ You skipped ${U.toLowerCase()} ${p.gap}</span> — you've watched up to ${p.max}.`
+    :p.next?(p.done?`Next up: <b style="color:var(--text)">${U.toLowerCase()} ${p.next}</b>`:`Tap an ${U==="Ep"?"episode":"chapter"} to tick it.`)
+    :it.total?`All ${it.total} done ✓`:"";
+  const count=it.total||Math.max(12,Math.ceil((p.max+12)/12)*12);
+  const per=100,pages=Math.ceil(count/per);
+  if(epPage<0)epPage=Math.min(pages-1,Math.floor(Math.max(0,((p.gap||p.next||1)-1))/per));
+  if(epPage>=pages)epPage=pages-1;
+  const pg=$("dPages");pg.innerHTML="";
+  if(pages>1)for(let i=0;i<pages;i++)pg.appendChild(mkChip(`${i*per+1}–${Math.min(count,(i+1)*per)}`,epPage===i,()=>{epPage=i;renderEpisodes(it);}));
+  const g=$("dGrid");g.innerHTML="";
+  for(let n=epPage*per+1;n<=Math.min(count,(epPage+1)*per);n++){
+    const b=document.createElement("button");
+    b.className="ep num"+(p.set.has(n)?" on":n===p.gap?" gap":n===p.next?" next":"");
+    b.textContent=n;
+    b.onclick=()=>{
+      const set=progress(it).set;
+      if(upToMode){for(let k=1;k<=n;k++)set.add(k);}
+      else if(set.has(n))set.delete(n);else set.add(n);
+      it.w=fmtW(set);
+      if(it.status==="plan"&&set.size){it.status="watching";it.startedAt=it.startedAt||Date.now();}
+      touch(it);const fin=finishCheck(it);save();
+      if(fin)renderDetail();else{renderEpisodes(it);const nb=g.children[n-1-epPage*per];if(nb)nb.classList.add("pop");}
+    };
+    g.appendChild(b);
+  }
+}
+function setStatus(it,k){
+  const prev=it.status;it.status=k;
+  if(k==="completed"){
+    it.completedAt=it.completedAt||Date.now();
+    if(it.total){const s=new Set();for(let n=1;n<=it.total;n++)s.add(n);it.w=fmtW(s);}
+    if(prev!=="completed")okPop();
+  }
+  if(k==="watching")it.startedAt=it.startedAt||Date.now();
+  touch(it);save();renderDetail();
+}
+function toggleTop(it){
+  const i=state.top.indexOf(it.id);
+  if(i>=0)state.top.splice(i,1);
+  else{
+    if(state.top.length>=10){toast("Your Top 10 is full — remove one first");return;}
+    state.top.push(it.id);toast("Added to your Top 10 at #"+state.top.length);
+  }
+  save();renderDetail();
+}
+function deleteItem(it){
+  const idx=state.items.indexOf(it),ti=state.top.indexOf(it.id);
+  state.items.splice(idx,1);if(ti>=0)state.top.splice(ti,1);save();closeDetail();
+  toast("Deleted "+it.title,{label:"Undo",fn:()=>{state.items.splice(idx,0,it);if(ti>=0)state.top.splice(ti,0,it.id);save();render();}});
+}
+function fmtDate(ts){const d=new Date(ts);return d.getDate()+" "+["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]+" "+d.getFullYear();}
+
+/* ---------- MyAnimeList (Jikan) ---------- */
+const malCache={};let lastMalCall=0;
+async function malSearch(q,kind){
+  const key=kind+"|"+q.toLowerCase();if(malCache[key])return malCache[key];
+  const wait=Math.max(0,lastMalCall+1100-Date.now());if(wait)await new Promise(r=>setTimeout(r,wait));
+  lastMalCall=Date.now();
+  const ctl=new AbortController();const tm=setTimeout(()=>ctl.abort(),9000);
+  try{
+    const r=await fetch(`https://api.jikan.moe/v4/${kind}?q=${encodeURIComponent(q)}&limit=8&sfw=true`,{signal:ctl.signal});
+    if(r.status===429)throw new Error("busy");
+    if(!r.ok)throw new Error("down");
+    const j=await r.json();
+    const res=(j.data||[]).map(d=>({
+      mal:d.mal_id,title:d.title_english||d.title,alt:d.title_english&&d.title!==d.title_english?d.title:"",
+      type:kind==="manga"?"Manga":(d.type==="Movie"?"Movie":"Anime"),rawType:d.type||"",
+      total:kind==="manga"?(d.chapters||null):(d.episodes||null),
+      cover:(d.images&&(d.images.jpg&&(d.images.jpg.image_url||d.images.jpg.large_image_url)||d.images.webp&&d.images.webp.image_url))||null,
+      year:d.year||(d.aired&&d.aired.prop&&d.aired.prop.from&&d.aired.prop.from.year)||(d.published&&d.published.prop&&d.published.prop.from&&d.published.prop.from.year)||null,
+      airing:d.status||""
+    }));
+    malCache[key]=res;return res;
+  }finally{clearTimeout(tm);}
+}
+function malRow(m,onPick){
+  const d=document.createElement("div");d.className="malres";
+  d.innerHTML=`${coverHtml({title:m.title,cover:m.cover})}<div style="flex:1;min-width:0"><div class="t">${escapeHtml(m.title)}</div>
+    <div class="s">${escapeHtml([m.rawType||m.type,m.year,m.total?m.total+" "+(m.total===1?unitLong(m.type).slice(0,-1):unitLong(m.type)):"",m.airing].filter(Boolean).join(" · "))}</div>
+    ${m.alt?`<div class="s">${escapeHtml(m.alt)}</div>`:""}</div>`;
+  d.onclick=()=>onPick(m);return d;
+}
+function malError(e){return e&&e.message==="busy"?"MyAnimeList is busy — wait a few seconds and try again.":"MyAnimeList isn't answering right now. You can still add or edit it by hand.";}
+async function malPickFor(it){
+  const box=$("dMalRes");box.innerHTML=`<div class="spinner"></div>`;
+  try{
+    const res=await malSearch(it.title,it.type==="Manga"?"manga":"anime");
+    box.innerHTML=res.length?`<div class="mini" style="margin:0 0 8px">Pick the right one:</div>`:`<div class="mini">No matches found. Try editing the title first.</div>`;
+    res.slice(0,6).forEach(m=>box.appendChild(malRow(m,()=>{
+      it.cover=m.cover||it.cover;it.mal=m.mal;if(m.total)it.total=m.total;if(it.type!=="Manga"&&m.type==="Movie")it.type="Movie";
+      touch(it);finishCheck(it);save();renderDetail();toast("Updated from MyAnimeList");
+    })));
+  }catch(e){box.innerHTML=`<div class="mini">${malError(e)}</div>`;}
+}
+
+/* ---------- ADD ---------- */
+let addKind="anime",addAs="watching",addTimer=null,addSeq=0;
+function openAdd(){
+  $("addQ").value="";$("addResults").innerHTML=`<div class="mini" style="margin-top:8px">Search MyAnimeList, or type a name and add it yourself.</div>`;
+  renderAddAs();openSheet($("addSheet"));setTimeout(()=>$("addQ").focus(),350);
+}
+function renderAddAs(){
+  const w=$("addAs");w.innerHTML="";
+  [["watching",addKind==="manga"?"Reading":"Watching"],["completed","Completed"],["plan","Plan to "+(addKind==="manga"?"read":"watch")]].forEach(([k,l])=>
+    w.appendChild(mkChip("Add as "+l,addAs===k,()=>{addAs=k;renderAddAs();})));
+}
+$("addKind").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+  addKind=b.dataset.k;$("addKind").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));renderAddAs();runAddSearch();
+});
+$("addQ").oninput=()=>{clearTimeout(addTimer);addTimer=setTimeout(runAddSearch,450);};
+async function runAddSearch(){
+  const q=$("addQ").value.trim();const R=$("addResults");const seq=++addSeq;
+  R.innerHTML="";
+  if(!q){R.innerHTML=`<div class="mini" style="margin-top:8px">Search MyAnimeList, or type a name and add it yourself.</div>`;return;}
+  const dup=state.items.find(i=>norm(i.title)===norm(q));
+  if(dup){const d=document.createElement("button");d.className="ghostbtn brand";d.textContent="Already in your list — open “"+dup.title+"”";d.onclick=()=>{closeSheet($("addSheet"));openDetail(dup.id);};R.appendChild(d);}
+  const man=document.createElement("button");man.className="ghostbtn";man.textContent="+ Add “"+q+"” without searching";
+  man.onclick=()=>addItem({title:q,type:addKind==="manga"?"Manga":"Anime"});R.appendChild(man);
+  if(q.length<3)return;
+  const sp=document.createElement("div");sp.className="spinner";R.appendChild(sp);
+  try{
+    const res=await malSearch(q,addKind);if(seq!==addSeq)return;sp.remove();
+    if(!res.length){R.insertAdjacentHTML("beforeend",`<div class="mini">No matches on MyAnimeList.</div>`);return;}
+    res.forEach(m=>R.appendChild(malRow(m,()=>addItem(m))));
+  }catch(e){if(seq!==addSeq)return;sp.remove();R.insertAdjacentHTML("beforeend",`<div class="mini">${malError(e)}</div>`);}
+}
+function addItem(m){
+  const exists=state.items.find(i=>(m.mal&&i.mal===m.mal)||norm(i.title)===norm(m.title));
+  if(exists){closeSheet($("addSheet"));openDetail(exists.id);toast("Already in your list");return;}
+  const now=Date.now();
+  const it={id:id(),title:m.title,type:m.type||"Anime",status:m.type==="Movie"&&addAs==="watching"?"completed":addAs,score:null,note:"",
+    total:m.total||null,w:"",cover:m.cover||null,mal:m.mal||null,addedAt:now,startedAt:addAs==="watching"?now:null,completedAt:null,updatedAt:now};
+  if(it.status==="completed"){it.completedAt=now;if(it.total){const s=new Set();for(let n=1;n<=it.total;n++)s.add(n);it.w=fmtW(s);}}
+  state.items.push(it);save();
+  closeSheet($("addSheet"));
+  fStatus=it.status;fType="all";query="";$("q").value="";
+  if(view!=="list")goto("list");else render();
+  okPop();setTimeout(()=>openDetail(it.id),300);
+}
+$("fab").onclick=openAdd;
+
+/* ---------- TOP 10 ---------- */
+function renderTop(){
+  const L=$("topList");L.innerHTML="";
+  if(!state.top.length)L.innerHTML=`<div class="empty">No Top 10 yet.<br>Open any show and tap ⭐ Add to my Top 10.</div>`;
+  state.top.forEach((tid,i)=>{
+    const it=byId(tid);if(!it)return;
+    const r=document.createElement("div");r.className="trow";
+    r.innerHTML=`<div class="rank ${i<3?"r"+(i+1):""}">${i+1}</div>${coverHtml(it)}
+      <div class="rmid" style="cursor:pointer"><div class="rtitle">${escapeHtml(it.title)}</div>
+      <div class="rsub">${it.type}${it.score?` · <span class="star">★ ${it.score}</span>`:""}</div></div>
+      <div class="ord"><button ${i===0?"disabled":""} aria-label="Up">▲</button><button ${i===state.top.length-1?"disabled":""} aria-label="Down">▼</button></div>`;
+    r.querySelector(".rmid").onclick=()=>openDetail(it.id);
+    r.querySelector(".cover").onclick=()=>openDetail(it.id);
+    const [up,down]=r.querySelectorAll(".ord button");
+    up.onclick=()=>{[state.top[i-1],state.top[i]]=[state.top[i],state.top[i-1]];save();renderTop();};
+    down.onclick=()=>{[state.top[i+1],state.top[i]]=[state.top[i],state.top[i+1]];save();renderTop();};
+    L.appendChild(r);
+  });
+  const S=$("topSuggest");S.innerHTML="";
+  const cand=state.items.filter(it=>it.score&&!state.top.includes(it.id)).sort((a,b)=>b.score-a.score||(b.completedAt||0)-(a.completedAt||0)).slice(0,12);
+  if(!cand.length)return;
+  S.innerHTML=`<div class="sectitle">${state.top.length<10?"Your highest rated — tap + to add":"Also rated highly — swap one in by removing from the Top 10 first"}</div>`;
+  cand.forEach(it=>{
+    const r=document.createElement("div");r.className="trow";
+    r.innerHTML=`${coverHtml(it)}<div class="rmid" style="cursor:pointer"><div class="rtitle">${escapeHtml(it.title)}</div>
+      <div class="rsub"><span class="star">★ ${it.score}</span> · ${it.type}</div></div>
+      ${state.top.length<10?`<button class="plus1">+ Top 10</button>`:""}`;
+    r.querySelector(".rmid").onclick=()=>openDetail(it.id);
+    const b=r.querySelector(".plus1");if(b)b.onclick=()=>{state.top.push(it.id);save();renderTop();toast("Added at #"+state.top.length);};
+    S.appendChild(r);
+  });
+}
+
+/* ---------- STATS ---------- */
+function renderStats(){
+  const B=$("statsBody");const it=state.items;
+  const c=k=>it.filter(i=>i.status===k).length;
+  const eps=it.filter(i=>i.type==="Anime").reduce((a,i)=>a+watchedCount(i),0);
+  const chs=it.filter(i=>i.type==="Manga").reduce((a,i)=>a+watchedCount(i),0);
+  const movies=it.filter(i=>i.type==="Movie"&&i.status==="completed").length;
+  const scored=it.filter(i=>i.score);const avg=scored.length?(scored.reduce((a,i)=>a+i.score,0)/scored.length):0;
+  const unknownEps=it.filter(i=>i.type==="Anime"&&i.status==="completed"&&!i.total&&!i.w).length;
+  B.innerHTML=`
+    <div class="grid2">
+      <div class="tile"><div class="v num" style="color:var(--completed)">${c("completed")}</div><div class="k">Completed</div></div>
+      <div class="tile"><div class="v num" style="color:var(--watching)">${c("watching")}</div><div class="k">Watching / reading</div></div>
+      <div class="tile"><div class="v num">${eps.toLocaleString("en-US")}</div><div class="k">Episodes logged${eps?` · ~${Math.round(eps*23/60).toLocaleString("en-US")} h`:""}</div></div>
+      <div class="tile"><div class="v num">${movies}</div><div class="k">Movies watched</div></div>
+      <div class="tile"><div class="v num">${chs.toLocaleString("en-US")}</div><div class="k">Chapters read</div></div>
+      <div class="tile"><div class="v num star">${avg?avg.toFixed(1):"—"}</div><div class="k">Average score (${scored.length} rated)</div></div>
+    </div>
+    ${unknownEps?`<div class="mini" style="margin:-6px 4px 14px">${unknownEps} completed shows have no episode count yet, so the episode total is low. Settings → Fill in covers from MyAnimeList adds them.</div>`:""}
+    <div class="panel"><h4>Your scores</h4><div id="scoreBars"></div></div>
+    <div class="panel"><h4>By status</h4><div id="statusBars"></div></div>
+    <div class="panel"><h4>Completed per year</h4><div id="yearBars"></div></div>`;
+  const bars=(el,rows,color)=>{const max=Math.max(1,...rows.map(r=>r[1]));
+    $(el).innerHTML=rows.map(([l,v,col])=>`<div class="brow"><span class="lb">${escapeHtml(l)}</span><span class="bt"><i style="width:${v/max*100}%;background:${col||color}"></i></span><span class="ct num">${v}</span></div>`).join("");};
+  bars("scoreBars",[10,9,8,7,6,5,4,3,2,1].map(n=>["★"+n,scored.filter(i=>i.score===n).length]),"var(--gold)");
+  $("scoreBars").querySelectorAll(".brow").forEach((r,i)=>{r.style.cursor="pointer";r.onclick=()=>{fStatus="all";sortBy="score";query="";goto("list");};});
+  bars("statusBars",STATUSES.map(s=>[s.label.split(" ")[0],c(s.k),s.c]));
+  $("statusBars").querySelectorAll(".lb").forEach(l=>{l.style.width="74px";l.style.flex="0 0 74px";});
+  const years={};let undated=0;
+  it.filter(i=>i.status==="completed").forEach(i=>{if(i.completedAt){const y=new Date(i.completedAt).getFullYear();years[y]=(years[y]||0)+1;}else undated++;});
+  const ys=Object.keys(years).sort();
+  $("yearBars").innerHTML="";
+  if(ys.length)bars("yearBars",ys.map(y=>[y,years[y]]),"var(--completed)");
+  if(undated)$("yearBars").insertAdjacentHTML("beforeend",`<div class="mini" style="margin:8px 0 0">${undated} older ones have no finish date.</div>`);
+}
+
+/* ---------- SETTINGS ---------- */
+let pasteAs="watching",filling=false;
+function openSettings(){renderPasteAs();$("fillBtn").textContent=filling?"Stop filling covers":"Fill in covers from MyAnimeList";openSheet($("setSheet"));}
+function renderPasteAs(){const w=$("pasteAs");w.innerHTML="";
+  [["watching","Watching"],["completed","Completed"],["plan","Plan to watch"]].forEach(([k,l])=>w.appendChild(mkChip(l,pasteAs===k,()=>{pasteAs=k;renderPasteAs();})));}
+$("gear").onclick=openSettings;$("navSettings").onclick=openSettings;
+$("setDone").onclick=()=>closeSheet($("setSheet"));
+$("pasteBtn").onclick=()=>{
+  const lines=$("pasteBox").value.split(/\n/).map(l=>l.replace(/^[\s•\-*\d.)]+(?=\D)/,"").trim()).filter(Boolean);
+  let added=0,skipped=0;const now=Date.now();
+  lines.forEach((l,i)=>{
+    let m=l.match(/^(.*?)[\s\-–:]+(?:ep\.?|episode|ch\.?|chapter)?\s*(\d{1,4})$/i);
+    let title=m?m[1].trim():l,upTo=m?+m[2]:0;
+    if(!title){title=l;upTo=0;}
+    if(state.items.some(x=>norm(x.title)===norm(title))){skipped++;return;}
+    const it={id:id(),title,type:"Anime",status:pasteAs,score:null,note:"",total:null,w:upTo?"1-"+upTo:"",cover:null,mal:null,
+      addedAt:now+i,startedAt:pasteAs==="watching"?now:null,completedAt:pasteAs==="completed"?now:null,updatedAt:now+i};
+    state.items.push(it);added++;
+  });
+  save();$("pasteBox").value="";render();
+  toast(`Added ${added}${skipped?` · ${skipped} already in your list`:""}`);
+};
+$("fillBtn").onclick=async()=>{
+  if(filling){filling=false;$("fillBtn").textContent="Fill in covers from MyAnimeList";return;}
+  const todo=state.items.filter(i=>!i.cover&&!i.malTried);
+  if(!todo.length){toast("Every show already has a cover");return;}
+  filling=true;$("fillBtn").textContent="Stop filling covers";let done=0,fails=0;
+  for(const it of todo){
+    if(!filling)break;
+    try{
+      const res=await malSearch(it.title,it.type==="Manga"?"manga":"anime");
+      const exact=res.find(m=>norm(m.title)===norm(it.title)||norm(m.alt)===norm(it.title));
+      const m=exact||res[0];
+      if(m){it.cover=m.cover||null;it.mal=m.mal;if(!it.total&&m.total&&it.type!=="Movie")it.total=m.total;if(m.type==="Movie")it.type="Movie";}
+      it.malTried=true;done++;
+    }catch(e){fails++;if(fails>=3){toast(malError(e));break;}await new Promise(r=>setTimeout(r,4000));}
+    if(done%5===0){save();render();toast(`Covers: ${done} of ${todo.length}`);}
+  }
+  filling=false;save();render();$("fillBtn").textContent="Fill in covers from MyAnimeList";
+  toast(`Covers filled for ${done} shows${fails?" · MyAnimeList stopped answering, try again later":""}`);
+};
+
+/* ---------- backup ---------- */
+function download(name,content,type){
+  if(IN_APP){try{window.AndroidBridge.saveFile(name,content,type);}catch(e){toast("Couldn't save the file");}return;}
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast("Backup saved");
+}
+window.onFileSaved=ok=>toast(ok?"Backup saved":"Couldn't save the file");
+function stamp(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+$("exportBtn").onclick=()=>download("anime-list-backup-"+stamp()+".json",JSON.stringify(state),"application/json");
+$("importBtn").onclick=()=>$("importFile").click();
+$("importFile").onchange=function(){
+  const f=this.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const s=JSON.parse(r.result);if(!s||!Array.isArray(s.items))throw 0;
+      if(state.items.length&&!confirm(`Replace your list with this backup (${s.items.length} shows)?`))return;
+      state=normalize(s);save();closeSheet($("setSheet"));fStatus="watching";goto("list");okPop();toast(`Imported ${state.items.length} shows`);
+    }catch(e){toast("That file isn't an anime list backup");}
+  };
+  r.readAsText(f);this.value="";
+};
+$("resetBtn").onclick=()=>{if(confirm("Erase your whole list? Export a backup first if you might want it back.")){state=fresh();save();closeSheet($("setSheet"));render();toast("List erased");}};
+
+/* ---------- sheets ---------- */
+function syncLock(){document.body.classList.toggle("locked",!!document.querySelector(".sheet-overlay.on"));}
+function openSheet(o){clearTimeout(o._t);o.style.display="flex";o.getBoundingClientRect();requestAnimationFrame(()=>requestAnimationFrame(()=>{o.classList.add("on");syncLock();}));o.querySelector(".sheet").scrollTop=0;}
+function closeSheet(o){o.classList.remove("on");syncLock();clearTimeout(o._t);o._t=setTimeout(()=>{if(!o.classList.contains("on"))o.style.display="";},340);
+  if(document.activeElement&&o.contains(document.activeElement))document.activeElement.blur();}
+function attachDrag(o,onClose){
+  const sheet=o.querySelector(".sheet");
+  o.querySelectorAll(".grabber, .sheet > h3").forEach(h=>{
+    let sy=0,dy=0,drag=false,moved=false;
+    h.addEventListener("pointerdown",e=>{drag=true;moved=false;sy=e.clientY;dy=0;o.classList.add("dragging");try{h.setPointerCapture(e.pointerId);}catch(err){}});
+    h.addEventListener("pointermove",e=>{if(!drag)return;dy=Math.max(0,e.clientY-sy);if(dy>4)moved=true;sheet.style.transform="translateY("+dy+"px)";});
+    const end=()=>{if(!drag)return;drag=false;o.classList.remove("dragging");sheet.style.transform="";if(dy>100)onClose();};
+    h.addEventListener("pointerup",end);h.addEventListener("pointercancel",end);
+    h.addEventListener("click",e=>{if(moved){e.stopImmediatePropagation();}else if(h.classList.contains("grabber"))onClose();},true);
+  });
+  o.addEventListener("click",e=>{if(e.target===o)onClose();});
+}
+attachDrag($("detailSheet"),closeDetail);
+attachDrag($("addSheet"),()=>closeSheet($("addSheet")));
+attachDrag($("setSheet"),()=>closeSheet($("setSheet")));
+window.appBack=function(){
+  if($("addSheet").classList.contains("on")){closeSheet($("addSheet"));return true;}
+  if($("detailSheet").classList.contains("on")){closeDetail();return true;}
+  if($("setSheet").classList.contains("on")){closeSheet($("setSheet"));return true;}
+  if(view!=="list"){goto("list");return true;}
+  return false;
+};
+
+/* ---------- feedback ---------- */
+const REDUCED=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+function okPop(){if(REDUCED)return;const o=$("okPop");o.classList.remove("on");void o.offsetWidth;o.classList.add("on");}
+let toastT;
+function hideToast(){$("toast").classList.remove("on","act");}
+function toast(msg,action){
+  const el=$("toast"),btn=$("toastAct");$("toastMsg").textContent=msg;
+  if(action){btn.textContent=action.label;btn.classList.remove("hidden");el.classList.add("act");btn.onclick=()=>{hideToast();clearTimeout(toastT);action.fn();};}
+  else{btn.classList.add("hidden");btn.onclick=null;el.classList.remove("act");}
+  el.classList.add("on");clearTimeout(toastT);toastT=setTimeout(hideToast,action?5000:2600);
+}
+
+/* ---------- offline copy + updates ---------- */
+if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost")){
+  const had=!!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{if(had&&!window.__rl){window.__rl=true;location.reload();}});
+  navigator.serviceWorker.register("sw.js").then(r=>r.update()).catch(()=>{});
+}
+
+/* ---------- boot ---------- */
+if(!state.items.some(i=>i.status==="watching"))fStatus=state.items.length?"completed":"watching";
+render();
+</script>
+</body>
+</html>
