@@ -3,7 +3,7 @@ Run after editing cloud.js:  python3 tools/inline_cloud.py"""
 import re, pathlib
 root = pathlib.Path(__file__).resolve().parent.parent
 src = (root / "web/cloud.js").read_text()
-for page in ["web/index.html", "web/anime/index.html"]:
+for page in ["web/index.html", "web/anime/index.html", "web/animepc/index.html"]:
     p = root / page
     s = p.read_text()
     block = "<script>/*CLOUD-START*/\n" + src + "/*CLOUD-END*/</script>\n"
