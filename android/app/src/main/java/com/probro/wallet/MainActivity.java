@@ -150,6 +150,29 @@ public class MainActivity extends Activity {
 
     /** Called from the web app to save a backup or CSV through Android's Save dialog. */
     public class Bridge {
+        /** Anime List: lets the page know this app can show new-episode notifications. */
+        @JavascriptInterface
+        public boolean hasAiring() { return true; }
+
+        @JavascriptInterface
+        public boolean notifAllowed() {
+            return android.os.Build.VERSION.SDK_INT < 33
+                    || checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED;
+        }
+
+        /** Anime List: the shows being watched, as JSON [{id, title, aired, at}]. */
+        @JavascriptInterface
+        public void setAiring(final String json) {
+            AiringWorker.update(getApplicationContext(), json);
+            askNotifications(false);
+        }
+
+        @JavascriptInterface
+        public void testNotification() {
+            askNotifications(true);
+            AiringWorker.notify(getApplicationContext(), 1, "Anime List", "Notifications are working ✓");
+        }
+
         @JavascriptInterface
         public void saveFile(final String name, final String content, final String mime) {
             runOnUiThread(() -> {
@@ -167,6 +190,15 @@ public class MainActivity extends Activity {
                     notifySaved(false);
                 }
             });
+        }
+    }
+
+    private void askNotifications(boolean force) {
+        if (android.os.Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                && (force || !prefs.getBoolean("asked_notif", false))) {
+            prefs.edit().putBoolean("asked_notif", true).apply();
+            runOnUiThread(() -> requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 3));
         }
     }
 

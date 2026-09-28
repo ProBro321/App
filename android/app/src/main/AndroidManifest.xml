@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Internet is only used to fetch app updates from the GitHub page. Money data never leaves the phone. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Anime List: alerts when a new episode of a show you watch comes out. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"

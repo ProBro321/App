@@ -93,6 +93,22 @@
   .pbar i{display:block;height:100%;background:var(--watching);border-radius:4px;transition:width .4s cubic-bezier(.22,.9,.3,1);}
   .ptxt{font-size:11.5px;color:var(--muted);margin-top:4px;}
   .warn{color:var(--hold);font-weight:700;}
+  .airtag{display:inline-block;margin-top:5px;font-size:11.5px;font-weight:800;padding:3px 8px;border-radius:8px;}
+  .airtag.new{background:rgba(51,217,160,.16);color:var(--completed);animation:newglow 2.4s ease-in-out infinite;}
+  .airtag.soon{background:rgba(255,107,91,.12);color:var(--dropped);}
+  .airtag.done{background:var(--surface);color:var(--muted);}
+  @keyframes newglow{50%{box-shadow:0 0 0 3px rgba(51,217,160,.12);}}
+  .newbanner{margin:0 0 12px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,rgba(51,217,160,.16),rgba(79,163,255,.12));border:1px solid rgba(51,217,160,.35);animation:slidein .45s cubic-bezier(.22,.9,.3,1);}
+  .newbanner b{display:block;font-size:14px;margin-bottom:6px;}
+  .newbanner .nb{display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font-size:13.5px;font-weight:700;}
+  .newbanner .nb span{color:var(--completed);margin-left:auto;white-space:nowrap;}
+  @keyframes slidein{from{opacity:0;transform:translateY(-8px);}}
+  .ep.na{border-color:rgba(255,107,91,.45);color:var(--dropped);background:rgba(255,107,91,.07);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;}
+  .ep.na small{font-size:8.5px;font-weight:700;opacity:.85;}
+  .ep.na.soon{border-style:dashed;}
+  .airline{margin:2px 0 10px;font-size:13px;color:var(--muted);}
+  .airline b{color:var(--text);}
+  .airline .red{color:var(--dropped);font-weight:800;}
   .plus1{border:1px solid var(--brand);background:var(--brand-soft);color:var(--text);font-weight:800;border-radius:12px;
     padding:9px 11px;font-size:13px;cursor:pointer;flex:0 0 auto;white-space:nowrap;}
   .empty{text-align:center;color:var(--muted);padding:40px 16px;font-size:14px;line-height:1.5;}
@@ -213,6 +229,7 @@
     <div class="search"><span>⌕</span><input id="q" type="search" placeholder="Search your list" autocomplete="off"><button id="qClear" class="hidden" aria-label="Clear">✕</button></div>
     <div class="chiprow" id="statusChips"></div>
     <div class="chiprow" id="typeChips"></div>
+    <div id="newEps"></div>
     <div id="list"></div>
   </div>
 
@@ -262,6 +279,9 @@
   <h4>Covers &amp; episode counts</h4>
   <div class="mini" id="coverInfo">Covers load by themselves while the app is open (AniList, with MyAnimeList as backup).</div>
   <button class="ghostbtn brand" id="fillBtn">Retry shows without a cover</button>
+  <h4>New episode alerts</h4>
+  <div class="mini" id="airInfo"></div>
+  <div id="airBtns"></div>
   <h4>Paste a list</h4>
   <div class="mini">One title per line. Add a number at the end for episodes watched, like “Frieren 12”. Everything goes in as Watching unless you pick another status.</div>
   <textarea class="field" id="pasteBox" placeholder="Frieren 12&#10;Dandadan&#10;Solo Leveling"></textarea>
@@ -452,6 +472,7 @@ function renderList(){
   const sep=document.createElement("div");sep.style.cssText="flex:0 0 1px;background:var(--line);margin:4px 2px";tc.appendChild(sep);
   [["recent","Recent"],["score","Score"],["az","A–Z"]].forEach(([k,l])=>tc.appendChild(mkChip("↕ "+l,sortBy===k,()=>{sortBy=k;animList=true;saveUi();renderList();})));
 
+  renderNewBanner();
   const L=$("list");L.innerHTML="";
   if(!state.items.length){
     L.innerHTML=`<div class="empty">Your list is empty.<br>Import your backup file, or add your first show with +.</div>`;
@@ -475,7 +496,7 @@ function row(it,fromPct){
     const pct=it.total?Math.min(100,p.done/it.total*100):0;
     const txt=p.max?`${unit(it.type)} ${p.max}${it.total?" / "+it.total:""}${p.next?` · next ${p.next}`:""}`:`Not started${it.total?" · "+it.total+" "+unitLong(it.type):""}`;
     prog=`<div class="prog">${it.total?`<div class="pbar"><i style="width:${fromPct!=null?fromPct:pct}%" data-to="${pct}"></i></div>`:""}
-      <div class="ptxt num">${txt}${p.gap?` · <span class="warn">⚠ skipped ${unit(it.type).toLowerCase()} ${p.gap}</span>`:""}</div></div>`;
+      <div class="ptxt num">${txt}${p.gap?` · <span class="warn">⚠ skipped ${unit(it.type).toLowerCase()} ${p.gap}</span>`:""}</div>${airTag(it)}</div>`;
   }
   const inTop=state.top.indexOf(it.id);
   r.innerHTML=`${coverHtml(it)}
@@ -512,8 +533,13 @@ function attachSwipe(wrap,r,onRight){
   };
   r.addEventListener("pointerup",end);r.addEventListener("pointercancel",end);
 }
-function plusOne(it){
+function plusOne(it,force){
   const p=progress(it);if(!p.next)return;
+  const aired=it.type==="Anime"&&it.air&&it.air.st!=="FINISHED"?airedNow(it):null;
+  if(!force&&aired!=null&&p.next>aired){
+    const at=airAt(it,p.next);
+    toast(`Ep ${p.next} hasn't aired yet${at?" — "+inTxt(at):""}`,{label:"Tick anyway",fn:()=>plusOne(it,true)});return;
+  }
   const oldPct=it.total?Math.min(100,p.done/it.total*100):null;
   const set=p.set;set.add(p.next);it.w=fmtW(set);
   if(it.status==="plan"){it.status="watching";it.startedAt=it.startedAt||Date.now();}
@@ -606,7 +632,19 @@ function renderEpisodes(it){
   $("dEpSum").innerHTML=p.gap?`<span class="warn">⚠ You skipped ${U.toLowerCase()} ${p.gap}</span> — you've watched up to ${p.max}.`
     :p.next?(p.done?`Next up: <b style="color:var(--text)">${U.toLowerCase()} ${p.next}</b>`:`Tap an ${U==="Ep"?"episode":"chapter"} to tick it.`)
     :it.total?`All ${it.total} done ✓`:"";
-  const count=it.total||Math.max(12,Math.ceil((p.max+12)/12)*12);
+  const aired=it.type==="Anime"?airedNow(it):null,nx=it.type==="Anime"?airNext(it):null;
+  if(it.air&&it.type==="Anime"){
+    let line="";
+    const nc=newCount(it);
+    if(nc>0)line=`🆕 <b>Ep ${p.max+1}${nc>1?"–"+aired:""}</b> ${nc>1?"are":"is"} out and waiting for you`;
+    if(nx)line+=(line?"<br>":"")+`📅 Ep ${nx.ep} comes out <b>${whenTxt(nx.at)}</b> <span class="red">(${inTxt(nx.at)})</span>`;
+    else if(it.air.st==="FINISHED")line+=(line?"<br>":"")+`✅ Finished airing${it.air.eps?" · all "+it.air.eps+" episodes are out":""}`;
+    else if(it.air.st==="NOT_YET_RELEASED")line+=(line?"<br>":"")+`<span class="red">Not aired yet</span> — no date announced`;
+    else if(aired!=null)line+=(line?"<br>":"")+`${aired} episodes out so far · next date not announced yet`;
+    $("dEpSum").insertAdjacentHTML("beforeend",`<div class="airline">${line}</div>`);
+  }
+  const schedMax=it.air&&it.air.sched&&it.air.sched.length?Math.max(...it.air.sched.map(x=>x[0])):0;
+  const count=it.total||Math.max(12,Math.ceil((Math.max(p.max,schedMax,aired||0)+(schedMax?0:12))/12)*12);
   const per=100,pages=Math.ceil(count/per);
   if(epPage<0)epPage=Math.min(pages-1,Math.floor(Math.max(0,((p.gap||p.next||1)-1))/per));
   if(epPage>=pages)epPage=pages-1;
@@ -615,9 +653,15 @@ function renderEpisodes(it){
   const g=$("dGrid");g.innerHTML="";
   for(let n=epPage*per+1;n<=Math.min(count,(epPage+1)*per);n++){
     const b=document.createElement("button");
-    b.className="ep num"+(p.set.has(n)?" on":n===p.gap?" gap":n===p.next?" next":"");
-    b.textContent=n;
+    const unaired=aired!=null&&n>aired&&!p.set.has(n)&&it.air.st!=="FINISHED";
+    b.className="ep num"+(p.set.has(n)?" on":unaired?" na"+(nx&&n===nx.ep?" soon":""):n===p.gap?" gap":n===p.next?" next":"");
+    if(unaired){const at=airAt(it,n);b.innerHTML=`${n}<small>${at?(nx&&n===nx.ep?inTxt(at).replace("in ",""):shortDay(at)):"TBA"}</small>`;}
+    else b.textContent=n;
     b.onclick=()=>{
+      if(unaired&&!upToMode&&b.dataset.ok!=="1"){
+        const at=airAt(it,n);b.dataset.ok="1";setTimeout(()=>{b.dataset.ok="";},3000);
+        toast(`Ep ${n} hasn't aired yet${at?" — "+whenTxt(at):""}. Tap again to tick anyway.`);return;
+      }
       const set=progress(it).set;
       if(upToMode){for(let k=1;k<=n;k++)set.add(k);}
       else if(set.has(n))set.delete(n);else set.add(n);
@@ -687,12 +731,136 @@ function bestMatch(res,title){
   const t=norm(title);
   return res.find(m=>norm(m.title)===t||norm(m.alt)===t)||res.find(m=>{const a=norm(m.title);return a.length>4&&(a.startsWith(t)||t.startsWith(a));})||res[0]||null;
 }
+/* ---------- new episodes (AniList airing schedule) ---------- */
+function needsAni(it){return !it.ani&&it.type==="Anime"&&(it.status==="watching"||it.status==="plan"||it.status==="hold");}
+function airTracked(it){return it.ani&&it.type==="Anime"&&(it.status==="watching"||it.status==="plan"||it.status==="hold");}
+async function aniQuery(query,variables){
+  const wait=Math.max(0,lastAniCall+2100-Date.now());if(wait)await new Promise(r=>setTimeout(r,wait));
+  lastAniCall=Date.now();
+  const ctl=new AbortController();const tm=setTimeout(()=>ctl.abort(),12000);
+  try{
+    const r=await fetch("https://graphql.anilist.co",{method:"POST",signal:ctl.signal,headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify({query,variables})});
+    if(!r.ok)throw new Error(r.status===429?"busy":"down");
+    return await r.json();
+  }finally{clearTimeout(tm);}
+}
+// episodes out right now (the saved schedule keeps counting while offline)
+function airedNow(it){
+  const a=it.air;if(!a)return null;
+  let n=a.aired==null?0:a.aired;const now=Date.now()/1000;
+  (a.sched||[]).forEach(([ep,at])=>{if(at<=now&&ep>n)n=ep;});
+  return n;
+}
+function airNext(it){
+  const a=it.air;if(!a)return null;const now=Date.now()/1000;
+  const up=(a.sched||[]).filter(([ep,at])=>at>now).sort((x,y)=>x[1]-y[1])[0];
+  return up?{ep:up[0],at:up[1]}:null;
+}
+function airAt(it,ep){const a=it.air;if(!a)return null;const f=(a.sched||[]).find(x=>x[0]===ep);return f?f[1]:null;}
+function newCount(it){
+  if(it.status!=="watching"||!it.air)return 0;
+  const aired=airedNow(it);const p=progress(it);
+  if(!aired)return 0;
+  return p.max?Math.max(0,aired-p.max):0;
+}
+function inTxt(at){
+  let m=Math.max(0,Math.round((at*1000-Date.now())/60000));
+  if(m<1)return "any minute";const d=Math.floor(m/1440),h=Math.floor(m%1440/60);m=m%60;
+  return "in "+(d?d+"d "+h+"h":h?h+"h "+m+"m":m+"m");
+}
+function whenTxt(at){
+  const d=new Date(at*1000);
+  return ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()]+" "+d.getDate()+" "+["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]+", "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+}
+function shortDay(at){const d=new Date(at*1000);return d.getDate()+"/"+(d.getMonth()+1);}
+function airTag(it){
+  if(!it.air||it.type!=="Anime")return "";
+  const nc=newCount(it),p=progress(it),aired=airedNow(it),nx=airNext(it);
+  if(nc>0)return `<span class="airtag new">🆕 ${nc>1?nc+" new episodes":"Ep "+(p.max+1)+" is out"}</span>`;
+  if(nx&&(it.status==="watching"||it.status==="hold"||it.status==="plan"))return `<span class="airtag soon" data-at="${nx.at}" data-ep="${nx.ep}">⏳ Ep ${nx.ep} ${inTxt(nx.at)}</span>`;
+  if(it.air.st==="NOT_YET_RELEASED")return `<span class="airtag soon">Not aired yet</span>`;
+  return "";
+}
+let airBusy=false;
+async function refreshAiring(force){
+  if(airBusy||!navigator.onLine)return;
+  const items=state.items.filter(airTracked);if(!items.length){syncNative();return;}
+  const last=+(localStorage.getItem("animelist_air_ts")||0);
+  if(!force&&Date.now()-last<10*60000){syncNative();return;}
+  airBusy=true;
+  try{
+    const ids=[...new Set(items.map(i=>i.ani))];
+    for(let i=0;i<ids.length;i+=50){
+      const j=await aniQuery(`query($ids:[Int]){Page(perPage:50){media(id_in:$ids){id episodes status nextAiringEpisode{episode airingAt}
+        airingSchedule(notYetAired:true,perPage:50){nodes{episode airingAt}}}}}`,{ids:ids.slice(i,i+50)});
+      const media=(j&&j.data&&j.data.Page&&j.data.Page.media)||[];
+      media.forEach(m=>{
+        const next=m.nextAiringEpisode;
+        const sched=((m.airingSchedule&&m.airingSchedule.nodes)||[]).map(n=>[n.episode,n.airingAt]);
+        if(next&&!sched.some(x=>x[0]===next.episode))sched.push([next.episode,next.airingAt]);
+        const aired=next?next.episode-1:(m.status==="FINISHED"||m.status==="CANCELLED")?(m.episodes||null):m.status==="NOT_YET_RELEASED"?0:null;
+        state.items.filter(it=>it.ani===m.id).forEach(it=>{
+          it.air={st:m.status,aired,eps:m.episodes||null,sched,ts:Date.now()};
+          if(!it.total&&m.episodes)it.total=m.episodes;
+        });
+      });
+    }
+    localStorage.setItem("animelist_air_ts",String(Date.now()));
+    save();
+    if(view==="list")renderList();if(detailId)renderEpisodesIfOpen();
+  }catch(e){}
+  airBusy=false;syncNative();
+}
+function renderEpisodesIfOpen(){const it=state.items.find(i=>i.id===detailId);if(it&&$("dGrid")){renderEpisodes(it);}}
+// hand the watch list to the Android app so it can notify even when closed
+function syncNative(){
+  const B=window.AndroidBridge;if(!B||!B.hasAiring)return;
+  const list=state.items.filter(it=>it.ani&&it.status==="watching"&&it.type==="Anime").map(it=>{const n=airNext(it);return {id:it.ani,title:it.title,aired:airedNow(it)==null?-1:airedNow(it),at:n?n.at:0};});
+  try{B.setAiring(JSON.stringify(list));}catch(e){}
+}
+function renderNewBanner(){
+  const box=$("newEps");if(!box)return;
+  const fresh=state.items.filter(it=>newCount(it)>0).sort((a,b)=>newCount(b)-newCount(a));
+  if(!fresh.length||query){box.innerHTML="";return;}
+  box.innerHTML=`<div class="newbanner"><b>🔔 New episodes out</b>${fresh.slice(0,5).map(it=>{const p=progress(it),nc=newCount(it);
+    return `<div class="nb" data-id="${it.id}">${escapeHtml(it.title.length>38?it.title.slice(0,38)+"…":it.title)}<span>${nc>1?"Ep "+(p.max+1)+"–"+airedNow(it):"Ep "+(p.max+1)}</span></div>`;}).join("")}</div>`;
+  box.querySelectorAll(".nb").forEach(n=>n.onclick=()=>openDetail(n.dataset.id));
+}
+setInterval(()=>{
+  document.querySelectorAll(".airtag[data-at]").forEach(t=>{const at=+t.dataset.at;if(at*1000<=Date.now()){if(view==="list")renderList();return;}t.textContent="⏳ Ep "+t.dataset.ep+" "+inTxt(at);});
+},60000);
+setInterval(()=>{if(document.visibilityState==="visible")refreshAiring();},15*60000);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshAiring();});
+
+function renderAirSettings(){
+  const info=$("airInfo"),bx=$("airBtns");if(!info)return;
+  const B=window.AndroidBridge;const tracked=state.items.filter(it=>it.ani&&it.status==="watching"&&it.type==="Anime").length;
+  const base=`The app checks airing dates for the ${tracked} show${tracked===1?"":"s"} you're watching (from AniList). Episodes that haven't aired show in red with their date.`;
+  bx.innerHTML="";
+  const btn=(t,f,cls)=>{const b=document.createElement("button");b.className="ghostbtn"+(cls?" "+cls:"");b.textContent=t;b.onclick=f;bx.appendChild(b);return b;};
+  if(B&&B.hasAiring){
+    const ok=B.notifAllowed?B.notifAllowed():true;
+    info.innerHTML=base+(ok?` <b style="color:var(--completed)">Notifications are on</b> — you'll get one when a new episode comes out, even with the app closed (Japan air time, usually within minutes).`
+      :` <b style="color:var(--dropped)">Notifications are blocked.</b> Tap below to allow them — if nothing pops up, turn them on in your phone's Settings → Apps → Anime List → Notifications.`);
+    btn(ok?"🔔 Send a test notification":"🔔 Allow notifications",()=>{B.testNotification();setTimeout(renderAirSettings,4000);},ok?"":"brand");
+  }else if(B){
+    info.innerHTML=base+` To get <b>notifications</b> on your phone, install the new version of the app once (your list stays).`;
+    btn("↓ Download the new app version",()=>{location.href="https://github.com/ProBro321/App/releases/latest/download/AnimeList.apk";},"brand");
+  }else{
+    info.innerHTML=base+` Notifications work in the Android app.`;
+  }
+  btn("↻ Check airing dates now",async e=>{const b=e.target;b.textContent="Checking…";
+    const miss=state.items.filter(needsAni);miss.forEach(i=>delete i.aniTried);
+    if(miss.length){toast("Matching "+miss.length+" shows first…");runCovers();}
+    await refreshAiring(true);b.textContent="✓ Updated";renderAirSettings();});
+}
+
 /* background cover filler */
 let coverBusy=null,coverRun=false;
 function coverTodo(){
   const pri=it=>(state.top.includes(it.id)?0:it.status==="watching"?1:it.status==="plan"?2:3);
   const recentTs=it=>Math.max(it.updatedAt||0,it.completedAt||0,it.startedAt||0,it.addedAt||0);
-  return state.items.filter(i=>!i.cover&&!i.malTried).sort((a,b)=>pri(a)-pri(b)||recentTs(b)-recentTs(a));
+  return state.items.filter(i=>(!i.cover&&!i.malTried)||(needsAni(i)&&!i.aniTried)).sort((a,b)=>pri(a)-pri(b)||recentTs(b)-recentTs(a));
 }
 function updateCoverBar(){
   const all=state.items.length,have=state.items.filter(i=>i.cover).length,left=coverTodo().length;
@@ -715,12 +883,13 @@ async function runCovers(){
     try{
       const res=await lookup(cleanForSearch(it.title),it.type==="Manga"?"manga":"anime");
       const m=bestMatch(res,it.title);
-      if(m){it.cover=m.cover||null;it.mal=it.mal||m.mal;if(!it.total&&m.total&&it.type!=="Movie")it.total=m.total;}
-      it.malTried=true;fails=0;
+      if(m){if(!it.cover)it.cover=m.cover||null;it.mal=it.mal||m.mal;if(!it.ani&&m.ani)it.ani=m.ani;if(!it.total&&m.total&&it.type!=="Movie")it.total=m.total;}
+      it.malTried=true;it.aniTried=true;fails=0;
     }catch(e){fails++;if(fails>=4){coverBusy=null;paintCover(it);break;}await new Promise(r=>setTimeout(r,5000));}
     coverBusy=null;paintCover(it);saveSoon();updateCoverBar();
   }
   coverRun=false;coverBusy=null;save();updateCoverBar();
+  refreshAiring();
   if(view==="stats")renderStats();
 }
 window.addEventListener("online",()=>setTimeout(runCovers,1500));
@@ -762,7 +931,7 @@ async function malPickFor(it){
     const res=await lookup(cleanForSearch(it.title),it.type==="Manga"?"manga":"anime");
     box.innerHTML=res.length?`<div class="mini" style="margin:0 0 8px">Pick the right one:</div>`:`<div class="mini">No matches found. Try editing the title first.</div>`;
     res.slice(0,6).forEach(m=>box.appendChild(malRow(m,()=>{
-      it.cover=m.cover||it.cover;it.mal=m.mal;if(m.total)it.total=m.total;if(it.type!=="Manga"&&m.type==="Movie")it.type="Movie";
+      it.cover=m.cover||it.cover;it.mal=m.mal;it.ani=m.ani||null;it.aniTried=true;delete it.air;if(m.total)it.total=m.total;setTimeout(()=>refreshAiring(true),300);if(it.type!=="Manga"&&m.type==="Movie")it.type="Movie";
       it.malTried=true;touch(it);finishCheck(it);save();renderDetail();toast("Cover updated");
     })));
   }catch(e){box.innerHTML=`<div class="mini">${malError(e)}</div>`;}
@@ -804,7 +973,7 @@ function addItem(m){
   if(exists){closeSheet($("addSheet"));openDetail(exists.id);toast("Already in your list");return;}
   const now=Date.now();
   const it={id:id(),title:m.title,type:m.type||"Anime",status:m.type==="Movie"&&addAs==="watching"?"completed":addAs,score:null,note:"",
-    total:m.total||null,w:"",cover:m.cover||null,mal:m.mal||null,addedAt:now,startedAt:addAs==="watching"?now:null,completedAt:null,updatedAt:now};
+    total:m.total||null,w:"",cover:m.cover||null,mal:m.mal||null,ani:m.ani||null,aniTried:true,addedAt:now,startedAt:addAs==="watching"?now:null,completedAt:null,updatedAt:now};
   if(it.status==="completed"){it.completedAt=now;if(it.total){const s=new Set();for(let n=1;n<=it.total;n++)s.add(n);it.w=fmtW(s);}}
   it.malTried=!!it.cover;
   state.items.push(it);save();
@@ -900,7 +1069,7 @@ function renderStats(){
 
 /* ---------- SETTINGS ---------- */
 let pasteAs="watching";
-function openSettings(){renderPasteAs();updateCoverBar();openSheet($("setSheet"));}
+function openSettings(){renderPasteAs();updateCoverBar();renderAirSettings();openSheet($("setSheet"));}
 function renderPasteAs(){const w=$("pasteAs");w.innerHTML="";
   [["watching","Watching"],["completed","Completed"],["plan","Plan to watch"]].forEach(([k,l])=>w.appendChild(mkChip(l,pasteAs===k,()=>{pasteAs=k;renderPasteAs();})));}
 $("gear").onclick=openSettings;$("navSettings").onclick=openSettings;
@@ -1024,6 +1193,7 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 
 /* ---------- boot ---------- */
 setTimeout(runCovers,1200);
+setTimeout(()=>{if(!coverRun)refreshAiring();},2500);
 if(!loadUi()&&!state.items.some(i=>i.status==="watching"))fStatus=state.items.length?"completed":"watching";
 render();
 </script>
