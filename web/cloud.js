@@ -69,7 +69,34 @@ async function fetchCloud(){
   if(!r.ok)throw new Error("HTTP "+r.status);
   return r.json();   // null when nothing saved yet
 }
+// Two-way sync for apps that can merge (Anime List): fetch cloud, merge with this device, save both sides.
+async function sync(){
+  const s=sess();if(!s||!ready())return {off:true};
+  if(!navigator.onLine){status="offline";paint();return {offline:true};}
+  if(busy){schedule(2000);return {busy:true};}
+  busy=true;status="saving";paint();if(opt.busy)opt.busy(true);
+  const startedDirty=getN("dirty");let changed=false;
+  try{
+    const c=await fetchCloud();
+    const local=localStorage.getItem(opt.key)||"";
+    let merged=local;
+    if(c&&c.data)merged=local?opt.merge(local,c.data):c.data;
+    if(merged!==local){localStorage.setItem(opt.key,merged);changed=true;if(opt.apply)opt.apply(merged);}
+    let savedAt=c&&c.savedAt||0;
+    if(!c||merged!==c.data){
+      const tok=await idToken();savedAt=Date.now();
+      const r=await fetch(dbUrl(s.uid,tok),{method:"PUT",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({savedAt,data:merged,summary:opt.summary?opt.summary():""})});
+      if(!r.ok)throw new Error("HTTP "+r.status);
+    }
+    setN("sync",Date.now());if(getN("dirty")===startedDirty)setN("dirty",0);else schedule(3000);
+    status="saved";lastErr="";
+  }catch(e){status="error";lastErr=e.message;schedule(30000);busy=false;paint();if(opt.busy)opt.busy(false);throw e;}
+  busy=false;paint();if(opt.busy)opt.busy(false);
+  return {changed};
+}
 async function push(){
+  if(opt&&opt.merge){try{await sync();}catch(e){}return;}
   const s=sess();if(!s||!ready())return;
   if(!navigator.onLine){status="offline";paint();return;}
   if(busy){schedule(3000);return;}
@@ -87,7 +114,7 @@ async function push(){
   }catch(e){status="error";lastErr=e.message;schedule(30000);}
   busy=false;paint();
 }
-function schedule(ms){clearTimeout(timer);timer=setTimeout(push,ms);}
+function schedule(ms){clearTimeout(timer);timer=setTimeout(()=>{timer=null;push();},ms);}
 function apply(c){
   try{localStorage.setItem(opt.key,c.data);}catch(e){return;}
   setN("sync",c.savedAt);setN("dirty",0);
@@ -111,6 +138,7 @@ async function signIn(name,pass){
   }
   setSess({name,uid:j.localId,idToken:j.idToken,refresh:j.refreshToken,exp:Date.now()+(+j.expiresIn||3600)*1000});
   setN("sync",0);
+  if(opt.merge&&!created){if(opt.toast)opt.toast(t.welcome);try{await sync();}catch(e){}return;}
   const c=created?null:await fetchCloud().catch(()=>null);
   if(c&&c.data){
     const local=localStorage.getItem(opt.key);
@@ -123,6 +151,7 @@ async function signIn(name,pass){
 // On open: if another phone saved newer data and this one has nothing unsaved, take the newer copy.
 async function checkNewer(){
   if(!sess()||!ready()||!navigator.onLine)return;
+  if(opt.merge){try{await sync();}catch(e){}return;}
   try{
     const c=await fetchCloud();
     if(c&&c.data&&c.savedAt>getN("sync")+1000&&!getN("dirty")&&c.data!==localStorage.getItem(opt.key)){apply(c);return;}
@@ -173,9 +202,10 @@ window.Cloud={
     setTimeout(checkNewer,1500);
     setInterval(()=>{if(status==="saved")paint();},60000);
   },
-  changed(){if(!opt||!sess()||!ready()||Date.now()-initAt<2500)return;setN("dirty",Date.now());schedule(4000);},
+  changed(){if(!opt||!sess()||!ready()||Date.now()-initAt<2500)return;setN("dirty",Date.now());if(!timer)schedule(4000);},  // never keep postponing: saves at most ~4s after the first change
   panel(el){if(!panels.includes(el))panels.push(el);render(el);},
   signedIn:()=>!!sess()&&ready(),
+  sync:()=>sync(),
   ready
 };
 })();

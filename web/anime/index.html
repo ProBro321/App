@@ -154,6 +154,14 @@ try{if(!window.AndroidBridge&&!/[?&]stay/.test(location.search)&&matchMedia("(mi
   .bigcd div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 4px;text-align:center;}
   .bigcd b{display:block;font-size:22px;font-weight:900;font-variant-numeric:tabular-nums;}
   .bigcd small{font-size:10.5px;color:var(--muted);font-weight:700;}
+  .syncbtn span{display:inline-block;font-size:20px;line-height:1;}
+  .syncbtn.spin span{animation:spin .75s linear infinite;}
+  .syncbtn.ok{border-color:var(--completed);color:var(--completed);}
+  #ptr{position:fixed;left:50%;top:0;z-index:55;width:40px;height:40px;margin-left:-20px;border-radius:50%;background:var(--surface);border:1px solid var(--line);
+    display:grid;place-items:center;color:var(--brand);font-size:20px;box-shadow:0 6px 18px rgba(0,0,0,.4);transform:translateY(-60px);opacity:0;pointer-events:none;}
+  #ptr.back{transition:transform .3s cubic-bezier(.22,.9,.3,1),opacity .3s;}
+  #ptr.spin i{animation:spin .75s linear infinite;}
+  #ptr i{display:inline-block;font-style:normal;}
   .newbanner{margin:0 0 12px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,rgba(51,217,160,.16),rgba(79,163,255,.12));border:1px solid rgba(51,217,160,.35);animation:slidein .45s cubic-bezier(.22,.9,.3,1);}
   .newbanner b{display:block;font-size:14px;margin-bottom:6px;}
   .newbanner .nb{display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font-size:13.5px;font-weight:700;}
@@ -195,8 +203,16 @@ try{if(!window.AndroidBridge&&!/[?&]stay/.test(location.search)&&matchMedia("(mi
   .navbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(12,10,18,.93);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);}
   .navin{max-width:520px;margin:0 auto;display:flex;align-items:center;justify-content:space-around;padding:9px 8px 12px;}
   .navbtn{border:0;background:transparent;color:var(--muted2);display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:650;cursor:pointer;padding:4px 8px;flex:1;}
-  .navbtn .ic{font-size:20px;}
+  .navbtn{color:#8f8aa3;font-size:11px;font-weight:750;gap:4px;}
+  .navbtn .ic{position:relative;width:56px;height:32px;border-radius:16px;display:grid;place-items:center;transition:background-color .25s,transform .2s;}
+  .navbtn .ic svg{width:24px;height:24px;display:block;}
   .navbtn.on{color:var(--brand);}
+  .navbtn.on .ic{background:var(--brand-soft);}
+  .navbtn:active .ic{transform:scale(.88);}
+  .navbtn.on .ic svg{animation:icpop .35s cubic-bezier(.22,1.6,.4,1);}
+  @keyframes icpop{from{transform:scale(.7);}}
+  .livedot{position:absolute;top:4px;right:13px;width:7px;height:7px;border-radius:50%;background:#ff4f5e;box-shadow:0 0 0 2px var(--bg);animation:livepulse 1.8s ease-in-out infinite;}
+  @keyframes livepulse{50%{opacity:.35;}}
   .fab{width:56px;height:56px;border-radius:50%;background:linear-gradient(160deg,var(--brand),var(--brand-dim));color:#fff;font-size:28px;border:0;cursor:pointer;
     box-shadow:0 8px 22px rgba(255,79,139,.42);margin-top:-26px;flex:0 0 56px;display:grid;place-items:center;}
   .fab:active{transform:scale(.92);}
@@ -280,7 +296,7 @@ try{if(!window.AndroidBridge&&!/[?&]stay/.test(location.search)&&matchMedia("(mi
 
   <!-- LIST -->
   <div class="view" id="view-list">
-    <div class="topbar"><h1>My <span>List</span></h1><div style="display:flex;gap:8px"><button class="iconbtn bellbtn" id="bell" aria-label="Notifications">🔔<span class="bdot hidden" id="bellDot"></span></button><button class="iconbtn" id="gear" aria-label="Settings">⚙</button></div></div>
+    <div class="topbar"><h1>My <span>List</span></h1><div style="display:flex;gap:8px"><button class="iconbtn syncbtn" id="syncBtn" aria-label="Refresh"><span>⟳</span></button><button class="iconbtn bellbtn" id="bell" aria-label="Notifications">🔔<span class="bdot hidden" id="bellDot"></span></button><button class="iconbtn" id="gear" aria-label="Settings">⚙</button></div></div>
     <div class="strip" id="strip"></div>
     <div class="coverbar hidden" id="coverBar"><span id="coverTxt">Loading covers…</span><span class="mbar"><i id="coverFill" style="width:0%"></i></span></div>
     <div class="search"><span>⌕</span><input id="q" type="search" placeholder="Search your list" autocomplete="off"><button id="qClear" class="hidden" aria-label="Clear">✕</button></div>
@@ -300,7 +316,7 @@ try{if(!window.AndroidBridge&&!/[?&]stay/.test(location.search)&&matchMedia("(mi
 
   <!-- LIVE (seasons + countdowns) -->
   <div class="view hidden" id="view-live">
-    <div class="topbar"><h1>Anime <span>Live</span></h1><button class="iconbtn" id="gear2" aria-label="Settings">⚙</button></div>
+    <div class="topbar"><h1>Anime <span>Live</span></h1><div style="display:flex;gap:8px"><button class="iconbtn syncbtn" id="syncBtn2" aria-label="Refresh"><span>⟳</span></button><button class="iconbtn" id="gear2" aria-label="Settings">⚙</button></div></div>
     <div class="chiprow" id="liveSeasons"></div>
     <div class="chiprow" id="liveFilter"></div>
     <div id="liveBody"></div>
@@ -313,12 +329,13 @@ try{if(!window.AndroidBridge&&!/[?&]stay/.test(location.search)&&matchMedia("(mi
   </div>
 </div>
 
+<div id="ptr"><i>⟳</i></div>
 <div class="navbar"><div class="navin">
-  <button class="navbtn on" data-nav="list"><span class="ic">📺</span>List</button>
-  <button class="navbtn" data-nav="top"><span class="ic">🏆</span>Top 10</button>
-  <button class="fab" id="fab" aria-label="Add">+</button>
-  <button class="navbtn" data-nav="live"><span class="ic">⏱</span>Live</button>
-  <button class="navbtn" data-nav="stats"><span class="ic">📊</span>Stats</button>
+  <button class="navbtn on" data-nav="list"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="13" rx="3"/><path d="M8 21h8"/><path d="M10.5 9.2v4.6l4-2.3z" fill="currentColor" stroke-width="1.4"/></svg></span>List</button>
+  <button class="navbtn" data-nav="top"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 4h9v5.5a4.5 4.5 0 0 1-9 0z"/><path d="M7.5 6H4.5a3 3 0 0 0 3.2 4M16.5 6h3a3 3 0 0 1-3.2 4"/><path d="M12 14v3.5M8.5 20.5h7"/></svg></span>Top 10</button>
+  <button class="fab" id="fab" aria-label="Add"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+  <button class="navbtn" data-nav="live"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.6 1.8"/><path d="M9.5 2.8h5"/></svg><i class="livedot"></i></span>Live</button>
+  <button class="navbtn" data-nav="stats"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20v-7M12 20V5M19 20v-10"/><path d="M3 20.5h18" stroke-width="1.6"/></svg></span>Stats</button>
 </div></div>
 
 <!-- DETAIL -->
@@ -449,7 +466,34 @@ async function fetchCloud(){
   if(!r.ok)throw new Error("HTTP "+r.status);
   return r.json();   // null when nothing saved yet
 }
+// Two-way sync for apps that can merge (Anime List): fetch cloud, merge with this device, save both sides.
+async function sync(){
+  const s=sess();if(!s||!ready())return {off:true};
+  if(!navigator.onLine){status="offline";paint();return {offline:true};}
+  if(busy){schedule(2000);return {busy:true};}
+  busy=true;status="saving";paint();if(opt.busy)opt.busy(true);
+  const startedDirty=getN("dirty");let changed=false;
+  try{
+    const c=await fetchCloud();
+    const local=localStorage.getItem(opt.key)||"";
+    let merged=local;
+    if(c&&c.data)merged=local?opt.merge(local,c.data):c.data;
+    if(merged!==local){localStorage.setItem(opt.key,merged);changed=true;if(opt.apply)opt.apply(merged);}
+    let savedAt=c&&c.savedAt||0;
+    if(!c||merged!==c.data){
+      const tok=await idToken();savedAt=Date.now();
+      const r=await fetch(dbUrl(s.uid,tok),{method:"PUT",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({savedAt,data:merged,summary:opt.summary?opt.summary():""})});
+      if(!r.ok)throw new Error("HTTP "+r.status);
+    }
+    setN("sync",Date.now());if(getN("dirty")===startedDirty)setN("dirty",0);else schedule(3000);
+    status="saved";lastErr="";
+  }catch(e){status="error";lastErr=e.message;schedule(30000);busy=false;paint();if(opt.busy)opt.busy(false);throw e;}
+  busy=false;paint();if(opt.busy)opt.busy(false);
+  return {changed};
+}
 async function push(){
+  if(opt&&opt.merge){try{await sync();}catch(e){}return;}
   const s=sess();if(!s||!ready())return;
   if(!navigator.onLine){status="offline";paint();return;}
   if(busy){schedule(3000);return;}
@@ -467,7 +511,7 @@ async function push(){
   }catch(e){status="error";lastErr=e.message;schedule(30000);}
   busy=false;paint();
 }
-function schedule(ms){clearTimeout(timer);timer=setTimeout(push,ms);}
+function schedule(ms){clearTimeout(timer);timer=setTimeout(()=>{timer=null;push();},ms);}
 function apply(c){
   try{localStorage.setItem(opt.key,c.data);}catch(e){return;}
   setN("sync",c.savedAt);setN("dirty",0);
@@ -491,6 +535,7 @@ async function signIn(name,pass){
   }
   setSess({name,uid:j.localId,idToken:j.idToken,refresh:j.refreshToken,exp:Date.now()+(+j.expiresIn||3600)*1000});
   setN("sync",0);
+  if(opt.merge&&!created){if(opt.toast)opt.toast(t.welcome);try{await sync();}catch(e){}return;}
   const c=created?null:await fetchCloud().catch(()=>null);
   if(c&&c.data){
     const local=localStorage.getItem(opt.key);
@@ -503,6 +548,7 @@ async function signIn(name,pass){
 // On open: if another phone saved newer data and this one has nothing unsaved, take the newer copy.
 async function checkNewer(){
   if(!sess()||!ready()||!navigator.onLine)return;
+  if(opt.merge){try{await sync();}catch(e){}return;}
   try{
     const c=await fetchCloud();
     if(c&&c.data&&c.savedAt>getN("sync")+1000&&!getN("dirty")&&c.data!==localStorage.getItem(opt.key)){apply(c);return;}
@@ -553,9 +599,10 @@ window.Cloud={
     setTimeout(checkNewer,1500);
     setInterval(()=>{if(status==="saved")paint();},60000);
   },
-  changed(){if(!opt||!sess()||!ready()||Date.now()-initAt<2500)return;setN("dirty",Date.now());schedule(4000);},
+  changed(){if(!opt||!sess()||!ready()||Date.now()-initAt<2500)return;setN("dirty",Date.now());if(!timer)schedule(4000);},  // never keep postponing: saves at most ~4s after the first change
   panel(el){if(!panels.includes(el))panels.push(el);render(el);},
   signedIn:()=>!!sess()&&ready(),
+  sync:()=>sync(),
   ready
 };
 })();
@@ -588,6 +635,8 @@ function normalize(s){
   if(!s||!Array.isArray(s.items))s=fresh();
   if(!Array.isArray(s.top))s.top=[];
   if(!s.seen||typeof s.seen!=="object"||Array.isArray(s.seen))s.seen={};
+  if(!s.deleted||typeof s.deleted!=="object"||Array.isArray(s.deleted))s.deleted={};
+  s.topAt=+s.topAt||0;
   s.items.forEach(it=>{
     if(!it.id)it.id=id();
     if(!TYPES.includes(it.type))it.type="Anime";
@@ -605,7 +654,10 @@ let state=load();
 function saveUi(){try{localStorage.setItem(KEY+"_ui",JSON.stringify({fStatus,fType,sortBy}));}catch(e){}}
 function loadUi(){try{const u=JSON.parse(localStorage.getItem(KEY+"_ui"));if(u){fStatus=u.fStatus||fStatus;fType=u.fType||fType;sortBy=u.sortBy||sortBy;return true;}}catch(e){}return false;}
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.items)return normalize(s);}catch(e){}return fresh();}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast("Couldn't save — storage is full or blocked");}if(window.Cloud)Cloud.changed();}
+let lastTop=null;
+function save(){
+  const tj=JSON.stringify(state.top);if(lastTop!==null&&tj!==lastTop)state.topAt=Date.now();lastTop=tj;
+  try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast("Couldn't save — storage is full or blocked");}if(window.Cloud)Cloud.changed();}
 const byId=x=>state.items.find(i=>i.id===x);
 
 /* ---------- episode sets ("1-6,8") ---------- */
@@ -956,8 +1008,8 @@ function toggleTop(it){
 }
 function deleteItem(it){
   const idx=state.items.indexOf(it),ti=state.top.indexOf(it.id);
-  state.items.splice(idx,1);if(ti>=0)state.top.splice(ti,1);save();closeDetail();
-  toast("Deleted "+it.title,{label:"Undo",fn:()=>{state.items.splice(idx,0,it);if(ti>=0)state.top.splice(ti,0,it.id);save();render();}});
+  state.items.splice(idx,1);if(ti>=0)state.top.splice(ti,1);state.deleted[it.id]=Date.now();save();closeDetail();
+  toast("Deleted "+it.title,{label:"Undo",fn:()=>{state.items.splice(idx,0,it);if(ti>=0)state.top.splice(ti,0,it.id);delete state.deleted[it.id];touch(it);save();render();}});
 }
 function fmtDate(ts){const d=new Date(ts);return d.getDate()+" "+["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]+" "+d.getFullYear();}
 
@@ -1660,7 +1712,71 @@ setTimeout(()=>{if(!coverRun)refreshAiring();},2500);
 if(!loadUi()&&!state.items.some(i=>i.status==="watching"))fStatus=state.items.length?"completed":"watching";
 render();
 /* cloud save */
-Cloud.init({app:"anime",key:KEY,toast:m=>toast(m),isEmpty:()=>!state.items.length,summary:()=>state.items.length+" shows"});
+/* ---------- merge two copies of the list (this device + cloud): newest change per show wins ---------- */
+function mergeAnime(a,b){
+  let A,B;try{A=normalize(JSON.parse(a));B=normalize(JSON.parse(b));}catch(e){return a;}
+  const del={...B.deleted};for(const k in A.deleted)del[k]=Math.max(del[k]||0,A.deleted[k]);
+  const bMap=new Map(B.items.map(i=>[i.id,i])),had=new Set(),out=[];
+  const pick=(x,y)=>{if(!y)return x;if(!x)return y;const w=(y.updatedAt||0)>(x.updatedAt||0)?y:x,o=w===x?y:x,r={...w};
+    ["cover","ani","mal","air","total"].forEach(k=>{if(r[k]==null&&o[k]!=null)r[k]=o[k];});return r;};
+  A.items.forEach(x=>{had.add(x.id);out.push(pick(x,bMap.get(x.id)));});
+  B.items.forEach(y=>{if(!had.has(y.id))out.push(y);});
+  const items=out.filter(i=>!(del[i.id]&&del[i.id]>=(i.updatedAt||0)));
+  const ids=new Set(items.map(i=>i.id));
+  const top=((B.topAt||0)>(A.topAt||0)?B:A).top.filter(x=>ids.has(x));
+  const seen={...A.seen};for(const k in B.seen)seen[k]=Math.max(seen[k]||0,B.seen[k]);
+  const M={...A,items,top,topAt:Math.max(A.topAt||0,B.topAt||0),deleted:del,seen};
+  const out1=JSON.stringify(M);
+  return out1===JSON.stringify(A)?a:out1;
+}
+let syncManual=false;
+function applyCloud(str){
+  try{state=normalize(JSON.parse(str));}catch(e){return;}
+  lastTop=JSON.stringify(state.top);
+  if(detailId&&!byId(detailId))closeDetail();
+  render();
+  if(!syncManual)toast("Updated from your other device ✓");
+}
+function setSpin(on){["syncBtn","syncBtn2"].forEach(k=>{const b=$(k);if(b){b.classList.toggle("spin",on);if(on)b.classList.remove("ok");}});}
+async function doRefresh(){
+  syncManual=true;setSpin(true);const t0=Date.now();let msg="Up to date ✓";
+  try{
+    if(window.Cloud&&Cloud.signedIn()){const r=await Cloud.sync();if(r&&r.changed)msg="Updated with your latest changes ✓";if(r&&r.offline)msg="You're offline — showing what's saved on this device";}
+    else msg="Refreshed ✓ — sign in to Cloud save (⚙) to sync your devices";
+  }catch(e){msg="Couldn't reach the cloud — try again in a moment";}
+  if(view==="live"&&liveData[liveTab]){liveData[liveTab].ts=0;loadLive(liveTab);}
+  refreshAiring(true);
+  await new Promise(r=>setTimeout(r,Math.max(0,600-(Date.now()-t0))));
+  setSpin(false);["syncBtn","syncBtn2"].forEach(k=>{const b=$(k);if(b){b.classList.add("ok");setTimeout(()=>b.classList.remove("ok"),1400);}});
+  render();toast(msg);syncManual=false;
+}
+$("syncBtn").onclick=doRefresh;$("syncBtn2").onclick=doRefresh;
+// phone: pull the page down from the top to refresh
+(function(){
+  const P=$("ptr");let y0=null,d=0,active=false;
+  document.addEventListener("touchstart",e=>{
+    if(window.scrollY>0||document.querySelector(".sheet-overlay.on")||e.touches.length!==1||active){y0=null;return;}
+    y0=e.touches[0].clientY;d=0;P.classList.remove("back");
+  },{passive:true});
+  document.addEventListener("touchmove",e=>{
+    if(y0==null)return;d=e.touches[0].clientY-y0;
+    if(d<=0||window.scrollY>0){P.style.opacity=0;P.style.transform="translateY(-60px)";return;}
+    const pull=Math.min(110,d*.5);P.style.opacity=Math.min(1,pull/60);
+    P.style.transform=`translateY(${pull-40}px) rotate(${pull*4}deg)`;
+  },{passive:true});
+  document.addEventListener("touchend",async()=>{
+    if(y0==null)return;y0=null;P.classList.add("back");
+    if(d*.5>=70&&!active){
+      active=true;P.style.transform="translateY(26px)";P.classList.add("spin");
+      await doRefresh();
+      P.classList.remove("spin");active=false;
+    }
+    P.style.opacity=0;P.style.transform="translateY(-60px)";
+  });
+})();
+lastTop=JSON.stringify(state.top);
+Cloud.init({app:"anime",key:KEY,toast:m=>toast(m),isEmpty:()=>!state.items.length,summary:()=>state.items.length+" shows",
+  merge:mergeAnime,apply:applyCloud,busy:on=>{if(!syncManual)setSpin(on);}});
 </script>
 </body>
 </html>
