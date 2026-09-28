@@ -1,15 +1,23 @@
 /* Anime List offline copy: network first (so updates arrive), saved copy when offline or the server is off */
-const CACHE="anime-offline-v1";
+const CACHE="anime-offline-v2",COVERS="anime-covers-v1";
+const COVER_HOSTS=["s4.anilist.co","cdn.myanimelist.net","img.anili.st"];
 const PAGE=new URL("./",self.registration.scope).href;
 const ASSETS=["./","manifest.webmanifest","icons/icon-192.png","icons/icon-512.png"].map(p=>new URL(p,self.registration.scope).href);
 self.addEventListener("install",e=>{
   e.waitUntil(caches.open(CACHE).then(c=>Promise.all(ASSETS.map(u=>c.add(u).catch(()=>{})))).then(()=>self.skipWaiting()));
 });
 self.addEventListener("activate",e=>e.waitUntil(
-  caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())
+  caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE&&k!==COVERS).map(k=>caches.delete(k)))).then(()=>self.clients.claim())
 ));
 self.addEventListener("fetch",e=>{
   const req=e.request,url=new URL(req.url);
+  // Covers: saved copy first (they never change), so the list shows pictures offline too.
+  if(req.method==="GET"&&COVER_HOSTS.includes(url.hostname)){
+    e.respondWith(caches.open(COVERS).then(c=>c.match(req.url).then(m=>m||
+      fetch(req.url,{mode:"cors"}).then(r=>{if(r.ok)c.put(req.url,r.clone());return r;})
+        .catch(()=>fetch(req)))));
+    return;
+  }
   if(req.method!=="GET"||url.origin!==location.origin||url.searchParams.has("ping"))return;
   const key=req.mode==="navigate"?PAGE:req.url.split("?")[0];
   // Ask for the page with a unique address so no server cache can hand back an old version.

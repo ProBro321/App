@@ -55,11 +55,34 @@
   .chip small{opacity:.7;margin-left:4px;font-weight:600;}
 
   /* list rows */
-  .row{display:flex;gap:12px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:12px;}
+  .swipe{position:relative;overflow:hidden;border-bottom:1px solid var(--line);}
+  .sbg{position:absolute;inset:0;display:flex;align-items:center;padding:0 22px;font-weight:850;font-size:14px;color:#04241a;
+    background:var(--completed);opacity:0;}
+  .row{display:flex;gap:12px;align-items:center;padding:10px 4px;cursor:pointer;background:var(--bg);position:relative;touch-action:pan-y;}
   .row:active{background:var(--surface);}
+  .row.in{animation:rowIn .42s cubic-bezier(.22,.9,.3,1) both;animation-delay:calc(var(--i,0)*28ms);}
+  @keyframes rowIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .row.flash{animation:flash .7s ease;}
+  @keyframes flash{0%{background:rgba(51,217,160,.22)}100%{background:var(--bg)}}
+  .plus1.bump{animation:bump .4s cubic-bezier(.22,1.6,.4,1);}
+  @keyframes bump{0%{transform:scale(.82)}100%{transform:none}}
+  .tile .v{display:inline-block;}
+  .scorebtn.on{animation:bump .35s cubic-bezier(.22,1.6,.4,1);}
+  .trow{background:var(--bg);position:relative;}
+  .anim .brow .bt i{transform-origin:left;animation:growX .7s cubic-bezier(.22,.9,.3,1) both;animation-delay:calc(var(--i,0)*45ms + 120ms);}
+  .anim .tile,.anim .panel{animation:rowIn .45s cubic-bezier(.22,.9,.3,1) both;animation-delay:calc(var(--i,0)*50ms);}
+  @keyframes growX{from{transform:scaleX(0)}to{transform:none}}
+  .coverbar{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;margin:-2px 4px 10px;}
+  .coverbar .mbar{flex:1;height:4px;border-radius:3px;background:var(--track);overflow:hidden;}
+  .coverbar .mbar i{display:block;height:100%;background:var(--brand);transition:width .5s ease;}
   .cover{width:50px;height:70px;border-radius:10px;flex:0 0 50px;overflow:hidden;background:var(--raised);position:relative;
     display:grid;place-items:center;font-weight:850;font-size:18px;color:#fff;}
-  .cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;}
+  .cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;opacity:0;transform:scale(1.06);
+    transition:opacity .45s ease,transform .6s cubic-bezier(.22,.9,.3,1);}
+  .cover img.ld{opacity:1;transform:none;}
+  .cover.loading::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.14) 50%,transparent 70%);
+    background-size:220% 100%;animation:shimmer 1.2s linear infinite;}
+  @keyframes shimmer{from{background-position:120% 0}to{background-position:-120% 0}}
   .rmid{flex:1;min-width:0;}
   .rtitle{font-weight:750;font-size:14.5px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
   .rsub{font-size:12px;color:var(--muted);margin-top:3px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
@@ -113,7 +136,7 @@
   .sheet{width:100%;max-width:520px;margin:0 auto;background:var(--bg);border-radius:26px 26px 0 0;border:1px solid var(--line);border-bottom:none;
     max-height:92vh;overflow:auto;padding:4px 16px 30px;transform:translateY(100%);transition:transform .34s cubic-bezier(.32,.72,0,1);overscroll-behavior:contain;}
   .sheet-overlay.on .sheet{transform:none;}
-  .sheet-overlay.dragging .sheet{transition:none;}
+  .sheet-overlay.dragging .sheet,.sheet-overlay.dragging{transition:none;}
   .grabber{display:flex;justify-content:center;padding:10px 0 12px;touch-action:none;cursor:grab;}
   .grabber i{width:40px;height:5px;border-radius:3px;background:var(--line);}
   .sheet h3{font-size:19px;font-weight:850;margin:0 0 14px;touch-action:none;}
@@ -186,6 +209,7 @@
   <div class="view" id="view-list">
     <div class="topbar"><h1>My <span>List</span></h1><button class="iconbtn" id="gear" aria-label="Settings">⚙</button></div>
     <div class="strip" id="strip"></div>
+    <div class="coverbar hidden" id="coverBar"><span id="coverTxt">Loading covers…</span><span class="mbar"><i id="coverFill" style="width:0%"></i></span></div>
     <div class="search"><span>⌕</span><input id="q" type="search" placeholder="Search your list" autocomplete="off"><button id="qClear" class="hidden" aria-label="Clear">✕</button></div>
     <div class="chiprow" id="statusChips"></div>
     <div class="chiprow" id="typeChips"></div>
@@ -236,8 +260,8 @@
   <div class="grabber" id="setGrab"><i></i></div>
   <h3>Settings</h3>
   <h4>Covers &amp; episode counts</h4>
-  <div class="mini">Looks up every show without a cover on MyAnimeList, one at a time. Keep the app open while it runs.</div>
-  <button class="ghostbtn brand" id="fillBtn">Fill in covers from MyAnimeList</button>
+  <div class="mini" id="coverInfo">Covers load by themselves while the app is open (AniList, with MyAnimeList as backup).</div>
+  <button class="ghostbtn brand" id="fillBtn">Retry shows without a cover</button>
   <h4>Paste a list</h4>
   <div class="mini">One title per line. Add a number at the end for episodes watched, like “Frieren 12”. Everything goes in as Watching unless you pick another status.</div>
   <textarea class="field" id="pasteBox" placeholder="Frieren 12&#10;Dandadan&#10;Solo Leveling"></textarea>
@@ -252,6 +276,7 @@
   <div class="ver">Version __BUILD__</div>
 </div></div>
 
+<input type="file" id="coverFile" accept="image/*" style="display:none">
 <input type="file" id="importFile" accept="application/json,.json">
 <div id="okPop"><div>✓</div></div>
 <div class="toast" id="toast"><span id="toastMsg"></span><button id="toastAct" class="hidden"></button></div>
@@ -297,6 +322,8 @@ function normalize(s){
   return s;
 }
 let state=load();
+function saveUi(){try{localStorage.setItem(KEY+"_ui",JSON.stringify({fStatus,fType,sortBy}));}catch(e){}}
+function loadUi(){try{const u=JSON.parse(localStorage.getItem(KEY+"_ui"));if(u){fStatus=u.fStatus||fStatus;fType=u.fType||fType;sortBy=u.sortBy||sortBy;return true;}}catch(e){}return false;}
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.items)return normalize(s);}catch(e){}return fresh();}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast("Couldn't save — storage is full or blocked");}}
 const byId=x=>state.items.find(i=>i.id===x);
@@ -337,12 +364,35 @@ function initials(t){
   const w=String(t).replace(/[^\p{L}\p{N} ]/gu,"").split(/\s+/).filter(Boolean);
   return ((w[0]||"?")[0]+((w[1]||"")[0]||"")).toUpperCase();
 }
+// covers already shown once appear instantly on later redraws (no re-fade flicker)
+const loadedCovers=new Set();
+function coverLoaded(img){loadedCovers.add(img.getAttribute("src"));img.classList.add("ld");}
+function setCover(it,url){it.cover=url;it.malTried=true;touch(it);save();paintCover(it);renderDetail();toast("Cover updated");}
+function ownCover(it){
+  const link=prompt("Paste an image link\n(on Google Images: open the picture → long-press → Copy image address).\n\nLeave empty to pick a picture from your phone instead.","");
+  if(link===null)return;
+  const u=link.trim();
+  if(u){if(!/^https?:\/\//i.test(u)&&!/^data:image\//i.test(u)){toast("That doesn't look like an image link");return;}
+    const t=new Image();t.referrerPolicy="no-referrer";t.onload=()=>setCover(it,u);t.onerror=()=>toast("Couldn't open that picture — try another link");t.src=u;return;}
+  const f=$("coverFile");f.value="";
+  f.onchange=()=>{const file=f.files[0];if(!file)return;const rd=new FileReader();
+    rd.onload=()=>{const im=new Image();im.onload=()=>{
+      // shrink to a small poster so hundreds of covers still fit in the phone's storage
+      const W=200,H=280,c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");
+      const sc=Math.max(W/im.width,H/im.height),w=im.width*sc,h=im.height*sc;g.drawImage(im,(W-w)/2,(H-h)/2,w,h);
+      setCover(it,c.toDataURL("image/jpeg",.8));};im.onerror=()=>toast("Couldn't read that picture");im.src=rd.result;};
+    rd.readAsDataURL(file);};
+  f.click();
+}
 function coverHtml(it){
   const h=hue(it.title);
   const bg=`linear-gradient(150deg,hsl(${h} 55% 42%),hsl(${(h+40)%360} 60% 24%))`;
   const ini=escapeHtml(initials(it.title));
-  if(it.cover)return `<div class="cover" style="background:${bg}">${ini}<img src="${escapeHtml(it.cover)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()"></div>`;
-  return `<div class="cover" style="background:${bg}">${ini}</div>`;
+  const dataId=it.id?` data-cid="${it.id}"`:"";
+  if(it.cover){const seen=loadedCovers.has(it.cover)?' class="ld"':'';
+    return `<div class="cover"${dataId} style="background:${bg}">${ini}<img${seen} src="${escapeHtml(it.cover)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onload="coverLoaded(this)" onerror="this.remove()"></div>`;}
+  const busy=it.id&&coverBusy===it.id?" loading":"";
+  return `<div class="cover${busy}"${dataId} style="background:${bg}">${ini}</div>`;
 }
 
 /* ---------- navigation ---------- */
@@ -352,7 +402,7 @@ function goto(v){
   document.querySelectorAll(".view").forEach(el=>el.classList.add("hidden"));
   $("view-"+v).classList.remove("hidden");
   document.querySelectorAll(".navbtn[data-nav]").forEach(b=>b.classList.toggle("on",b.dataset.nav===v));
-  render();window.scrollTo(0,0);
+  animList=true;animStats=true;render();window.scrollTo(0,0);
 }
 document.querySelectorAll(".navbtn[data-nav]").forEach(b=>b.onclick=()=>goto(b.dataset.nav));
 function render(){
@@ -363,7 +413,14 @@ function render(){
 }
 
 /* ---------- LIST ---------- */
-let fStatus="watching",fType="all",sortBy="recent",query="",shown=60;
+let fStatus="watching",fType="all",sortBy="recent",query="",shown=60,animList=true;
+const rollMem={};
+function rollTo(el,key,value){
+  const prev=rollMem[key];rollMem[key]=value;const f=v=>Math.round(v).toLocaleString("en-US");
+  if(prev===undefined||prev===value||REDUCED){el.textContent=f(value);return;}
+  const t0=performance.now();const step=now=>{const k=Math.min(1,(now-t0)/650),e=1-Math.pow(1-k,3);el.textContent=f(prev+(value-prev)*e);if(k<1&&el.isConnected)requestAnimationFrame(step);};
+  el.textContent=f(prev);requestAnimationFrame(step);
+}
 function mkChip(label,on,fn,count){
   const c=document.createElement("div");c.className="chip"+(on?" on":"");
   c.innerHTML=escapeHtml(label)+(count!=null?`<small>${count}</small>`:"");c.onclick=fn;return c;
@@ -381,17 +438,19 @@ function renderList(){
   const n=k=>state.items.filter(i=>i.status===k).length;
   const eps=state.items.reduce((a,it)=>a+(it.type!=="Movie"&&it.type!=="Manga"?watchedCount(it):0),0);
   $("strip").innerHTML=`
-    <div class="tile"><div class="v num">${n("watching")}</div><div class="k">Watching</div></div>
-    <div class="tile"><div class="v num">${n("completed")}</div><div class="k">Completed</div></div>
-    <div class="tile"><div class="v num">${eps.toLocaleString("en-US")}</div><div class="k">Episodes logged</div></div>`;
+    <div class="tile"><div class="v num" id="sW"></div><div class="k">Watching</div></div>
+    <div class="tile"><div class="v num" id="sC"></div><div class="k">Completed</div></div>
+    <div class="tile"><div class="v num" id="sE"></div><div class="k">Episodes logged</div></div>`;
+  rollTo($("sW"),"w",n("watching"));rollTo($("sC"),"c",n("completed"));rollTo($("sE"),"e",eps);
+  updateCoverBar();
   const sc=$("statusChips");sc.innerHTML="";
   [...STATUSES.map(s=>[s.k,s.label]),["all","All"]].forEach(([k,l])=>
-    sc.appendChild(mkChip(l,fStatus===k&&!query,()=>{fStatus=k;shown=60;renderList();},k==="all"?state.items.length:n(k))));
+    sc.appendChild(mkChip(l,fStatus===k&&!query,()=>{fStatus=k;shown=60;animList=true;saveUi();renderList();},k==="all"?state.items.length:n(k))));
   sc.classList.toggle("hidden",!!query);
   const tc=$("typeChips");tc.innerHTML="";
-  [["all","All types"],["Anime","Anime"],["Movie","Movies"],["Manga","Manga"]].forEach(([k,l])=>tc.appendChild(mkChip(l,fType===k,()=>{fType=k;shown=60;renderList();})));
+  [["all","All types"],["Anime","Anime"],["Movie","Movies"],["Manga","Manga"]].forEach(([k,l])=>tc.appendChild(mkChip(l,fType===k,()=>{fType=k;shown=60;animList=true;saveUi();renderList();})));
   const sep=document.createElement("div");sep.style.cssText="flex:0 0 1px;background:var(--line);margin:4px 2px";tc.appendChild(sep);
-  [["recent","Recent"],["score","Score"],["az","A–Z"]].forEach(([k,l])=>tc.appendChild(mkChip("↕ "+l,sortBy===k,()=>{sortBy=k;renderList();})));
+  [["recent","Recent"],["score","Score"],["az","A–Z"]].forEach(([k,l])=>tc.appendChild(mkChip("↕ "+l,sortBy===k,()=>{sortBy=k;animList=true;saveUi();renderList();})));
 
   const L=$("list");L.innerHTML="";
   if(!state.items.length){
@@ -401,20 +460,21 @@ function renderList(){
   }
   const list=filtered();
   if(!list.length){L.innerHTML=`<div class="empty">${query?"Nothing matches “"+escapeHtml(query)+"”.":"Nothing here yet."}</div>`;return;}
-  list.slice(0,shown).forEach(it=>L.appendChild(row(it)));
+  const doAnim=animList;animList=false;
+  list.slice(0,shown).forEach((it,i)=>{const w=row(it),r=w.querySelector(".row");if(doAnim&&i<18){r.classList.add("in");r.style.setProperty("--i",i);}L.appendChild(w);});
   if(list.length>shown){
     const m=document.createElement("button");m.className="more";m.textContent=`Show ${Math.min(60,list.length-shown)} more (${list.length-shown} left)`;
     m.onclick=()=>{shown+=60;renderList();};L.appendChild(m);
   }
 }
-function row(it){
-  const r=document.createElement("div");r.className="row";
+function row(it,fromPct){
+  const r=document.createElement("div");r.className="row";r.dataset.id=it.id;
   const st=stInfo(it.status),p=progress(it);
   let prog="";
   if(it.type!=="Movie"&&(it.status==="watching"||it.status==="hold"||(it.status==="plan"&&p.done))){
     const pct=it.total?Math.min(100,p.done/it.total*100):0;
     const txt=p.max?`${unit(it.type)} ${p.max}${it.total?" / "+it.total:""}${p.next?` · next ${p.next}`:""}`:`Not started${it.total?" · "+it.total+" "+unitLong(it.type):""}`;
-    prog=`<div class="prog">${it.total?`<div class="pbar"><i style="width:${pct}%"></i></div>`:""}
+    prog=`<div class="prog">${it.total?`<div class="pbar"><i style="width:${fromPct!=null?fromPct:pct}%" data-to="${pct}"></i></div>`:""}
       <div class="ptxt num">${txt}${p.gap?` · <span class="warn">⚠ skipped ${unit(it.type).toLowerCase()} ${p.gap}</span>`:""}</div></div>`;
   }
   const inTop=state.top.indexOf(it.id);
@@ -425,18 +485,50 @@ function row(it){
       ${prog}
     </div>
     ${(it.status==="watching"||it.status==="plan")&&it.type!=="Movie"&&p.next?`<button class="plus1">+1 ${unit(it.type)}</button>`:""}`;
-  r.onclick=()=>openDetail(it.id);
+  const wrap=document.createElement("div");wrap.className="swipe";
+  const canPlus=(it.status==="watching"||it.status==="plan")&&it.type!=="Movie"&&p.next;
+  wrap.innerHTML=canPlus?`<div class="sbg">+1 ${unit(it.type)} ${p.next} ✓</div>`:"";
+  wrap.appendChild(r);
+  r.onclick=()=>{if(wrap._sw){wrap._sw=false;return;}openDetail(it.id);};
   const pb=r.querySelector(".plus1");
   if(pb)pb.onclick=e=>{e.stopPropagation();plusOne(it);};
-  return r;
+  if(canPlus)attachSwipe(wrap,r,()=>plusOne(it));
+  if(fromPct!=null)requestAnimationFrame(()=>requestAnimationFrame(()=>{const b=r.querySelector(".pbar i");if(b)b.style.width=b.dataset.to+"%";}));
+  return wrap;
+}
+function attachSwipe(wrap,r,onRight){
+  const bg=wrap.querySelector(".sbg");let sx=0,sy=0,dx=0,mode=null,pid=null;
+  r.addEventListener("pointerdown",e=>{if(e.target.closest(".plus1"))return;sx=e.clientX;sy=e.clientY;dx=0;mode="wait";pid=e.pointerId;r.style.transition="none";});
+  r.addEventListener("pointermove",e=>{
+    if(!mode||e.pointerId!==pid)return;const mx=e.clientX-sx,my=e.clientY-sy;
+    if(mode==="wait"){if(Math.abs(mx)<8&&Math.abs(my)<8)return;if(mx>0&&Math.abs(mx)>Math.abs(my)*1.3){mode="swipe";try{r.setPointerCapture(pid);}catch(err){}}else{mode=null;return;}}
+    dx=Math.max(0,mx);const damp=dx>120?120+(dx-120)*.35:dx;
+    r.style.transform="translateX("+damp+"px)";bg.style.transition="none";bg.style.opacity=Math.min(1,dx/80);
+  });
+  const end=()=>{
+    if(mode!=="swipe"){mode=null;return;}mode=null;wrap._sw=true;setTimeout(()=>wrap._sw=false,300);
+    r.style.transition="transform .3s cubic-bezier(.22,.9,.3,1)";r.style.transform="";bg.style.transition="opacity .3s";bg.style.opacity=0;
+    if(dx>90)setTimeout(onRight,120);
+  };
+  r.addEventListener("pointerup",end);r.addEventListener("pointercancel",end);
 }
 function plusOne(it){
   const p=progress(it);if(!p.next)return;
+  const oldPct=it.total?Math.min(100,p.done/it.total*100):null;
   const set=p.set;set.add(p.next);it.w=fmtW(set);
   if(it.status==="plan"){it.status="watching";it.startedAt=it.startedAt||Date.now();}
   touch(it);
-  if(!finishCheck(it))toast(`${escapeHtml(it.title).slice(0,40)}: ${unit(it.type).toLowerCase()} ${p.next} ✓`);
-  save();render();
+  const fin=finishCheck(it);
+  if(!fin)toast(`${it.title.slice(0,40)}: ${unit(it.type).toLowerCase()} ${p.next} ✓`);
+  save();
+  const old=view==="list"&&!fin?document.querySelector(`#list .row[data-id="${it.id}"]`):null;
+  if(old&&(it.status===fStatus||query||fStatus==="all")){
+    const nw=row(it,oldPct);old.parentElement.replaceWith(nw);
+    const r2=nw.querySelector(".row");r2.classList.add("flash");const b=r2.querySelector(".plus1");if(b)b.classList.add("bump");
+    rollTo($("sE"),"e",state.items.reduce((a,x)=>a+(x.type!=="Movie"&&x.type!=="Manga"?watchedCount(x):0),0));
+    rollTo($("sW"),"w",state.items.filter(i=>i.status==="watching").length);
+    if(detailId)renderDetail();
+  }else render();
 }
 function touch(it){it.updatedAt=Date.now();}
 function finishCheck(it){
@@ -445,7 +537,7 @@ function finishCheck(it){
   if(p.done>=it.total){it.status="completed";it.completedAt=Date.now();okPop();toast("🎉 Completed "+it.title);return true;}
   return false;
 }
-$("q").oninput=e=>{query=e.target.value;$("qClear").classList.toggle("hidden",!query);shown=60;renderList();};
+$("q").oninput=e=>{query=e.target.value;$("qClear").classList.toggle("hidden",!query);shown=60;animList=true;renderList();};
 $("qClear").onclick=()=>{query="";$("q").value="";$("qClear").classList.add("hidden");renderList();};
 
 /* ---------- DETAIL ---------- */
@@ -458,7 +550,7 @@ function renderDetail(){
   const topIdx=state.top.indexOf(it.id);
   const scroll=$("detailSheet").querySelector(".sheet").scrollTop;
   B.innerHTML=`
-    <div class="dhead">${coverHtml(it)}
+    <div class="dhead">${coverHtml(it).replace('class="cover','class="cover dhead-cover')}
       <div style="flex:1;min-width:0">
         <textarea class="dtitle" id="dTitle" rows="2">${escapeHtml(it.title)}</textarea>
         <div class="seg" id="dType">${TYPES.map(tp=>`<button data-t="${tp}" class="${it.type===tp?"on":""}">${tp}</button>`).join("")}</div>
@@ -482,8 +574,9 @@ function renderDetail(){
     <div class="epgrid" id="dGrid"></div>`}
     <h4>Notes</h4>
     <textarea class="field" id="dNote" placeholder="What did you think?">${escapeHtml(it.note||"")}</textarea>
-    <h4>MyAnimeList</h4>
+    <h4>Cover &amp; info</h4>
     <button class="ghostbtn" id="dMal">${it.cover?"Change cover / info":"Find cover & "+unitLong(it.type)}</button>
+    <button class="ghostbtn" id="dOwn" style="margin-top:8px">🖼️ Use my own picture</button>
     <div id="dMalRes"></div>
     <button class="ghostbtn danger" id="dDel" style="margin-top:6px">Delete from list</button>
     <div class="dates">${it.startedAt?"Started "+fmtDate(it.startedAt)+"<br>":""}${it.completedAt?"Completed "+fmtDate(it.completedAt)+"<br>":""}Added ${fmtDate(it.addedAt)}</div>`;
@@ -496,6 +589,7 @@ function renderDetail(){
   $("dTop").onclick=()=>toggleTop(it);
   $("dNote").onchange=e=>{it.note=e.target.value;touch(it);save();};
   $("dMal").onclick=()=>malPickFor(it);
+  $("dOwn").onclick=()=>ownCover(it);
   $("dDel").onclick=()=>deleteItem(it);
   if(it.type!=="Movie"){
     $("dTotal").onchange=e=>{const v=parseInt(e.target.value);it.total=v>0?v:null;touch(it);if(!finishCheck(it)){}save();renderDetail();};
@@ -561,6 +655,76 @@ function deleteItem(it){
 }
 function fmtDate(ts){const d=new Date(ts);return d.getDate()+" "+["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]+" "+d.getFullYear();}
 
+/* ---------- AniList (primary, free, no key) ---------- */
+let lastAniCall=0;
+async function aniSearch(q,kind){
+  const wait=Math.max(0,lastAniCall+2100-Date.now());if(wait)await new Promise(r=>setTimeout(r,wait));
+  lastAniCall=Date.now();
+  const ctl=new AbortController();const tm=setTimeout(()=>ctl.abort(),9000);
+  try{
+    const r=await fetch("https://graphql.anilist.co",{method:"POST",signal:ctl.signal,headers:{"Content-Type":"application/json",Accept:"application/json"},
+      body:JSON.stringify({query:`query($s:String,$t:MediaType){Page(perPage:8){media(search:$s,type:$t){id idMal format episodes chapters status seasonYear startDate{year}
+        title{romaji english} coverImage{large medium}}}}`,variables:{s:q,t:kind==="manga"?"MANGA":"ANIME"}})});
+    if(r.status===429)throw new Error("busy");
+    if(!r.ok)throw new Error("down");
+    const j=await r.json();
+    return ((j.data&&j.data.Page&&j.data.Page.media)||[]).map(m=>({
+      mal:m.idMal||null,ani:m.id,title:(m.title&&(m.title.english||m.title.romaji))||q,alt:m.title&&m.title.english&&m.title.romaji!==m.title.english?m.title.romaji:"",
+      type:kind==="manga"?"Manga":(m.format==="MOVIE"?"Movie":"Anime"),rawType:(m.format||"").replace("_"," "),
+      total:kind==="manga"?(m.chapters||null):(m.episodes||null),cover:m.coverImage&&(m.coverImage.large||m.coverImage.medium)||null,
+      year:m.seasonYear||(m.startDate&&m.startDate.year)||null,airing:(m.status||"").replace(/_/g," ").toLowerCase()
+    }));
+  }finally{clearTimeout(tm);}
+}
+async function lookup(q,kind){
+  const key="L|"+kind+"|"+q.toLowerCase();if(malCache[key])return malCache[key];
+  let res=null,err=null;
+  try{res=await aniSearch(q,kind);}catch(e){err=e;}
+  if(!res||!res.length){try{res=await malSearch(q,kind);}catch(e){if(!res)throw err||e;}}
+  malCache[key]=res||[];return malCache[key];
+}
+function bestMatch(res,title){
+  const t=norm(title);
+  return res.find(m=>norm(m.title)===t||norm(m.alt)===t)||res.find(m=>{const a=norm(m.title);return a.length>4&&(a.startsWith(t)||t.startsWith(a));})||res[0]||null;
+}
+/* background cover filler */
+let coverBusy=null,coverRun=false;
+function coverTodo(){
+  const pri=it=>(state.top.includes(it.id)?0:it.status==="watching"?1:it.status==="plan"?2:3);
+  const recentTs=it=>Math.max(it.updatedAt||0,it.completedAt||0,it.startedAt||0,it.addedAt||0);
+  return state.items.filter(i=>!i.cover&&!i.malTried).sort((a,b)=>pri(a)-pri(b)||recentTs(b)-recentTs(a));
+}
+function updateCoverBar(){
+  const all=state.items.length,have=state.items.filter(i=>i.cover).length,left=coverTodo().length;
+  const bar=$("coverBar");if(!bar)return;
+  if(!coverRun||!left)bar.classList.add("hidden");
+  else{bar.classList.remove("hidden");$("coverTxt").textContent=`Loading covers… ${have} of ${all}`;$("coverFill").style.width=(all?have/all*100:0)+"%";}
+  if($("coverInfo"))$("coverInfo").textContent=`Covers load by themselves while the app is open (AniList, with MyAnimeList as backup). ${have} of ${all} have a cover.`;
+}
+function paintCover(it){
+  document.querySelectorAll(`.cover[data-cid="${it.id}"]`).forEach(c=>{const tmp=document.createElement("div");tmp.innerHTML=coverHtml(it);
+    const n=tmp.firstElementChild;if(c.classList.contains("dhead-cover"))n.classList.add("dhead-cover");c.replaceWith(n);});
+}
+let saveT=null;function saveSoon(){clearTimeout(saveT);saveT=setTimeout(save,1500);}
+function cleanForSearch(t){return String(t).replace(/\s*[—–]\s*/g," ").replace(/\(.*?\)/g,"").replace(/\s+/g," ").trim();}
+async function runCovers(){
+  if(coverRun||!navigator.onLine)return;coverRun=true;let fails=0;updateCoverBar();
+  while(coverRun){
+    const it=coverTodo()[0];if(!it||!navigator.onLine)break;
+    coverBusy=it.id;paintCover(it);
+    try{
+      const res=await lookup(cleanForSearch(it.title),it.type==="Manga"?"manga":"anime");
+      const m=bestMatch(res,it.title);
+      if(m){it.cover=m.cover||null;it.mal=it.mal||m.mal;if(!it.total&&m.total&&it.type!=="Movie")it.total=m.total;}
+      it.malTried=true;fails=0;
+    }catch(e){fails++;if(fails>=4){coverBusy=null;paintCover(it);break;}await new Promise(r=>setTimeout(r,5000));}
+    coverBusy=null;paintCover(it);saveSoon();updateCoverBar();
+  }
+  coverRun=false;coverBusy=null;save();updateCoverBar();
+  if(view==="stats")renderStats();
+}
+window.addEventListener("online",()=>setTimeout(runCovers,1500));
+
 /* ---------- MyAnimeList (Jikan) ---------- */
 const malCache={};let lastMalCall=0;
 async function malSearch(q,kind){
@@ -591,15 +755,15 @@ function malRow(m,onPick){
     ${m.alt?`<div class="s">${escapeHtml(m.alt)}</div>`:""}</div>`;
   d.onclick=()=>onPick(m);return d;
 }
-function malError(e){return e&&e.message==="busy"?"MyAnimeList is busy — wait a few seconds and try again.":"MyAnimeList isn't answering right now. You can still add or edit it by hand.";}
+function malError(e){return e&&e.message==="busy"?"The cover service is busy — wait a few seconds and try again.":"Can't reach the cover service right now. You can still add or edit it by hand.";}
 async function malPickFor(it){
   const box=$("dMalRes");box.innerHTML=`<div class="spinner"></div>`;
   try{
-    const res=await malSearch(it.title,it.type==="Manga"?"manga":"anime");
+    const res=await lookup(cleanForSearch(it.title),it.type==="Manga"?"manga":"anime");
     box.innerHTML=res.length?`<div class="mini" style="margin:0 0 8px">Pick the right one:</div>`:`<div class="mini">No matches found. Try editing the title first.</div>`;
     res.slice(0,6).forEach(m=>box.appendChild(malRow(m,()=>{
       it.cover=m.cover||it.cover;it.mal=m.mal;if(m.total)it.total=m.total;if(it.type!=="Manga"&&m.type==="Movie")it.type="Movie";
-      touch(it);finishCheck(it);save();renderDetail();toast("Updated from MyAnimeList");
+      it.malTried=true;touch(it);finishCheck(it);save();renderDetail();toast("Cover updated");
     })));
   }catch(e){box.innerHTML=`<div class="mini">${malError(e)}</div>`;}
 }
@@ -607,7 +771,7 @@ async function malPickFor(it){
 /* ---------- ADD ---------- */
 let addKind="anime",addAs="watching",addTimer=null,addSeq=0;
 function openAdd(){
-  $("addQ").value="";$("addResults").innerHTML=`<div class="mini" style="margin-top:8px">Search MyAnimeList, or type a name and add it yourself.</div>`;
+  $("addQ").value="";$("addResults").innerHTML=`<div class="mini" style="margin-top:8px">Type a name to find it with its cover, or add it yourself.</div>`;
   renderAddAs();openSheet($("addSheet"));setTimeout(()=>$("addQ").focus(),350);
 }
 function renderAddAs(){
@@ -622,7 +786,7 @@ $("addQ").oninput=()=>{clearTimeout(addTimer);addTimer=setTimeout(runAddSearch,4
 async function runAddSearch(){
   const q=$("addQ").value.trim();const R=$("addResults");const seq=++addSeq;
   R.innerHTML="";
-  if(!q){R.innerHTML=`<div class="mini" style="margin-top:8px">Search MyAnimeList, or type a name and add it yourself.</div>`;return;}
+  if(!q){R.innerHTML=`<div class="mini" style="margin-top:8px">Type a name to find it with its cover, or add it yourself.</div>`;return;}
   const dup=state.items.find(i=>norm(i.title)===norm(q));
   if(dup){const d=document.createElement("button");d.className="ghostbtn brand";d.textContent="Already in your list — open “"+dup.title+"”";d.onclick=()=>{closeSheet($("addSheet"));openDetail(dup.id);};R.appendChild(d);}
   const man=document.createElement("button");man.className="ghostbtn";man.textContent="+ Add “"+q+"” without searching";
@@ -630,8 +794,8 @@ async function runAddSearch(){
   if(q.length<3)return;
   const sp=document.createElement("div");sp.className="spinner";R.appendChild(sp);
   try{
-    const res=await malSearch(q,addKind);if(seq!==addSeq)return;sp.remove();
-    if(!res.length){R.insertAdjacentHTML("beforeend",`<div class="mini">No matches on MyAnimeList.</div>`);return;}
+    const res=await lookup(q,addKind);if(seq!==addSeq)return;sp.remove();
+    if(!res.length){R.insertAdjacentHTML("beforeend",`<div class="mini">No matches found.</div>`);return;}
     res.forEach(m=>R.appendChild(malRow(m,()=>addItem(m))));
   }catch(e){if(seq!==addSeq)return;sp.remove();R.insertAdjacentHTML("beforeend",`<div class="mini">${malError(e)}</div>`);}
 }
@@ -642,6 +806,7 @@ function addItem(m){
   const it={id:id(),title:m.title,type:m.type||"Anime",status:m.type==="Movie"&&addAs==="watching"?"completed":addAs,score:null,note:"",
     total:m.total||null,w:"",cover:m.cover||null,mal:m.mal||null,addedAt:now,startedAt:addAs==="watching"?now:null,completedAt:null,updatedAt:now};
   if(it.status==="completed"){it.completedAt=now;if(it.total){const s=new Set();for(let n=1;n<=it.total;n++)s.add(n);it.w=fmtW(s);}}
+  it.malTried=!!it.cover;
   state.items.push(it);save();
   closeSheet($("addSheet"));
   fStatus=it.status;fType="all";query="";$("q").value="";
@@ -656,7 +821,7 @@ function renderTop(){
   if(!state.top.length)L.innerHTML=`<div class="empty">No Top 10 yet.<br>Open any show and tap ⭐ Add to my Top 10.</div>`;
   state.top.forEach((tid,i)=>{
     const it=byId(tid);if(!it)return;
-    const r=document.createElement("div");r.className="trow";
+    const r=document.createElement("div");r.className="trow";r.dataset.tid=tid;
     r.innerHTML=`<div class="rank ${i<3?"r"+(i+1):""}">${i+1}</div>${coverHtml(it)}
       <div class="rmid" style="cursor:pointer"><div class="rtitle">${escapeHtml(it.title)}</div>
       <div class="rsub">${it.type}${it.score?` · <span class="star">★ ${it.score}</span>`:""}</div></div>
@@ -664,8 +829,8 @@ function renderTop(){
     r.querySelector(".rmid").onclick=()=>openDetail(it.id);
     r.querySelector(".cover").onclick=()=>openDetail(it.id);
     const [up,down]=r.querySelectorAll(".ord button");
-    up.onclick=()=>{[state.top[i-1],state.top[i]]=[state.top[i],state.top[i-1]];save();renderTop();};
-    down.onclick=()=>{[state.top[i+1],state.top[i]]=[state.top[i],state.top[i+1]];save();renderTop();};
+    up.onclick=()=>flipTop(()=>{[state.top[i-1],state.top[i]]=[state.top[i],state.top[i-1]];});
+    down.onclick=()=>flipTop(()=>{[state.top[i+1],state.top[i]]=[state.top[i],state.top[i+1]];});
     L.appendChild(r);
   });
   const S=$("topSuggest");S.innerHTML="";
@@ -683,9 +848,22 @@ function renderTop(){
   });
 }
 
+function flipTop(change){
+  const before={};document.querySelectorAll("#topList .trow").forEach(r=>before[r.dataset.tid]=r.getBoundingClientRect().top);
+  change();save();renderTop();
+  if(REDUCED)return;
+  document.querySelectorAll("#topList .trow").forEach(r=>{
+    const b=before[r.dataset.tid];if(b==null)return;const d=b-r.getBoundingClientRect().top;if(!d)return;
+    r.style.transition="none";r.style.transform=`translateY(${d}px)`;r.style.zIndex=d>0?2:1;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{r.style.transition="transform .38s cubic-bezier(.22,.9,.3,1)";r.style.transform="";}));
+  });
+}
+
 /* ---------- STATS ---------- */
+let animStats=true;
 function renderStats(){
   const B=$("statsBody");const it=state.items;
+  B.classList.remove("anim");if(animStats){void B.offsetWidth;B.classList.add("anim");}animStats=false;
   const c=k=>it.filter(i=>i.status===k).length;
   const eps=it.filter(i=>i.type==="Anime").reduce((a,i)=>a+watchedCount(i),0);
   const chs=it.filter(i=>i.type==="Manga").reduce((a,i)=>a+watchedCount(i),0);
@@ -706,11 +884,12 @@ function renderStats(){
     <div class="panel"><h4>By status</h4><div id="statusBars"></div></div>
     <div class="panel"><h4>Completed per year</h4><div id="yearBars"></div></div>`;
   const bars=(el,rows,color)=>{const max=Math.max(1,...rows.map(r=>r[1]));
-    $(el).innerHTML=rows.map(([l,v,col])=>`<div class="brow"><span class="lb">${escapeHtml(l)}</span><span class="bt"><i style="width:${v/max*100}%;background:${col||color}"></i></span><span class="ct num">${v}</span></div>`).join("");};
+    $(el).innerHTML=rows.map(([l,v,col],i)=>`<div class="brow" style="--i:${i}"><span class="lb">${escapeHtml(l)}</span><span class="bt"><i style="width:${v/max*100}%;background:${col||color}"></i></span><span class="ct num">${v}</span></div>`).join("");};
   bars("scoreBars",[10,9,8,7,6,5,4,3,2,1].map(n=>["★"+n,scored.filter(i=>i.score===n).length]),"var(--gold)");
   $("scoreBars").querySelectorAll(".brow").forEach((r,i)=>{r.style.cursor="pointer";r.onclick=()=>{fStatus="all";sortBy="score";query="";goto("list");};});
   bars("statusBars",STATUSES.map(s=>[s.label.split(" ")[0],c(s.k),s.c]));
   $("statusBars").querySelectorAll(".lb").forEach(l=>{l.style.width="74px";l.style.flex="0 0 74px";});
+  B.querySelectorAll(".tile,.panel").forEach((el,i)=>el.style.setProperty("--i",i));
   const years={};let undated=0;
   it.filter(i=>i.status==="completed").forEach(i=>{if(i.completedAt){const y=new Date(i.completedAt).getFullYear();years[y]=(years[y]||0)+1;}else undated++;});
   const ys=Object.keys(years).sort();
@@ -720,8 +899,8 @@ function renderStats(){
 }
 
 /* ---------- SETTINGS ---------- */
-let pasteAs="watching",filling=false;
-function openSettings(){renderPasteAs();$("fillBtn").textContent=filling?"Stop filling covers":"Fill in covers from MyAnimeList";openSheet($("setSheet"));}
+let pasteAs="watching";
+function openSettings(){renderPasteAs();updateCoverBar();openSheet($("setSheet"));}
 function renderPasteAs(){const w=$("pasteAs");w.innerHTML="";
   [["watching","Watching"],["completed","Completed"],["plan","Plan to watch"]].forEach(([k,l])=>w.appendChild(mkChip(l,pasteAs===k,()=>{pasteAs=k;renderPasteAs();})));}
 $("gear").onclick=openSettings;$("navSettings").onclick=openSettings;
@@ -738,27 +917,12 @@ $("pasteBtn").onclick=()=>{
       addedAt:now+i,startedAt:pasteAs==="watching"?now:null,completedAt:pasteAs==="completed"?now:null,updatedAt:now+i};
     state.items.push(it);added++;
   });
-  save();$("pasteBox").value="";render();
+  save();$("pasteBox").value="";render();setTimeout(runCovers,500);
   toast(`Added ${added}${skipped?` · ${skipped} already in your list`:""}`);
 };
-$("fillBtn").onclick=async()=>{
-  if(filling){filling=false;$("fillBtn").textContent="Fill in covers from MyAnimeList";return;}
-  const todo=state.items.filter(i=>!i.cover&&!i.malTried);
-  if(!todo.length){toast("Every show already has a cover");return;}
-  filling=true;$("fillBtn").textContent="Stop filling covers";let done=0,fails=0;
-  for(const it of todo){
-    if(!filling)break;
-    try{
-      const res=await malSearch(it.title,it.type==="Manga"?"manga":"anime");
-      const exact=res.find(m=>norm(m.title)===norm(it.title)||norm(m.alt)===norm(it.title));
-      const m=exact||res[0];
-      if(m){it.cover=m.cover||null;it.mal=m.mal;if(!it.total&&m.total&&it.type!=="Movie")it.total=m.total;if(m.type==="Movie")it.type="Movie";}
-      it.malTried=true;done++;
-    }catch(e){fails++;if(fails>=3){toast(malError(e));break;}await new Promise(r=>setTimeout(r,4000));}
-    if(done%5===0){save();render();toast(`Covers: ${done} of ${todo.length}`);}
-  }
-  filling=false;save();render();$("fillBtn").textContent="Fill in covers from MyAnimeList";
-  toast(`Covers filled for ${done} shows${fails?" · MyAnimeList stopped answering, try again later":""}`);
+$("fillBtn").onclick=()=>{
+  const miss=state.items.filter(i=>!i.cover);miss.forEach(i=>delete i.malTried);save();
+  toast(miss.length?`Retrying ${miss.length} shows without a cover`:"Every show already has a cover");runCovers();
 };
 
 /* ---------- backup ---------- */
@@ -777,7 +941,7 @@ $("importFile").onchange=function(){
     try{
       const s=JSON.parse(r.result);if(!s||!Array.isArray(s.items))throw 0;
       if(state.items.length&&!confirm(`Replace your list with this backup (${s.items.length} shows)?`))return;
-      state=normalize(s);save();closeSheet($("setSheet"));fStatus="watching";goto("list");okPop();toast(`Imported ${state.items.length} shows`);
+      state=normalize(s);save();closeSheet($("setSheet"));fStatus="watching";saveUi();goto("list");okPop();toast(`Imported ${state.items.length} shows — loading covers`);setTimeout(runCovers,800);
     }catch(e){toast("That file isn't an anime list backup");}
   };
   r.readAsText(f);this.value="";
@@ -791,11 +955,38 @@ function closeSheet(o){o.classList.remove("on");syncLock();clearTimeout(o._t);o.
   if(document.activeElement&&o.contains(document.activeElement))document.activeElement.blur();}
 function attachDrag(o,onClose){
   const sheet=o.querySelector(".sheet");
+  // touch: pull down from anywhere on the panel when it is scrolled to the top; a quick flick also closes
+  let ty0=0,tx0=0,tdy=0,armed=false,tdrag=false,lastY=0,lastT=0,vel=0;
+  sheet.addEventListener("touchstart",e=>{
+    if(e.touches.length!==1){armed=false;return;}
+    const tg=e.target;
+    armed=sheet.scrollTop<=0&&!(tg.closest("textarea,input,select,.epgrid")&&!tg.closest(".grabber"));
+    ty0=lastY=e.touches[0].clientY;tx0=e.touches[0].clientX;lastT=performance.now();tdy=0;tdrag=false;vel=0;
+  },{passive:true});
+  sheet.addEventListener("touchmove",e=>{
+    if(!armed)return;
+    const y=e.touches[0].clientY,d=y-ty0,dxx=e.touches[0].clientX-tx0;
+    if(!tdrag){
+      if(Math.abs(dxx)>Math.abs(d)){armed=false;return;}
+      if(d>6&&sheet.scrollTop<=0){tdrag=true;o.classList.add("dragging");}
+      else if(d<-4){armed=false;return;}else return;
+    }
+    e.preventDefault();
+    const now=performance.now();vel=(y-lastY)/Math.max(1,now-lastT);lastY=y;lastT=now;
+    tdy=Math.max(0,d);
+    sheet.style.transform=`translateY(${tdy}px)`;o.style.backgroundColor=`rgba(0,0,0,${Math.max(0,.62-tdy/700)})`;
+  },{passive:false});
+  const tend=()=>{
+    if(!tdrag){armed=false;return;}
+    tdrag=false;armed=false;o.classList.remove("dragging");sheet.style.transform="";o.style.backgroundColor="";
+    if(tdy>110||vel>0.55)onClose();tdy=0;
+  };
+  sheet.addEventListener("touchend",tend);sheet.addEventListener("touchcancel",tend);
   o.querySelectorAll(".grabber, .sheet > h3").forEach(h=>{
     let sy=0,dy=0,drag=false,moved=false;
-    h.addEventListener("pointerdown",e=>{drag=true;moved=false;sy=e.clientY;dy=0;o.classList.add("dragging");try{h.setPointerCapture(e.pointerId);}catch(err){}});
-    h.addEventListener("pointermove",e=>{if(!drag)return;dy=Math.max(0,e.clientY-sy);if(dy>4)moved=true;sheet.style.transform="translateY("+dy+"px)";});
-    const end=()=>{if(!drag)return;drag=false;o.classList.remove("dragging");sheet.style.transform="";if(dy>100)onClose();};
+    h.addEventListener("pointerdown",e=>{if(e.pointerType==="touch")return;drag=true;moved=false;sy=e.clientY;dy=0;o.classList.add("dragging");try{h.setPointerCapture(e.pointerId);}catch(err){}});
+    h.addEventListener("pointermove",e=>{if(!drag||e.pointerType==="touch")return;dy=Math.max(0,e.clientY-sy);if(dy>4)moved=true;sheet.style.transform="translateY("+dy+"px)";o.style.backgroundColor=`rgba(0,0,0,${Math.max(0,.62-dy/700)})`;});
+    const end=()=>{if(!drag)return;drag=false;o.classList.remove("dragging");sheet.style.transform="";o.style.backgroundColor="";if(dy>100)onClose();};
     h.addEventListener("pointerup",end);h.addEventListener("pointercancel",end);
     h.addEventListener("click",e=>{if(moved){e.stopImmediatePropagation();}else if(h.classList.contains("grabber"))onClose();},true);
   });
@@ -832,7 +1023,8 @@ if("serviceWorker" in navigator&&(location.protocol==="https:"||location.hostnam
 }
 
 /* ---------- boot ---------- */
-if(!state.items.some(i=>i.status==="watching"))fStatus=state.items.length?"completed":"watching";
+setTimeout(runCovers,1200);
+if(!loadUi()&&!state.items.some(i=>i.status==="watching"))fStatus=state.items.length?"completed":"watching";
 render();
 </script>
 </body>
