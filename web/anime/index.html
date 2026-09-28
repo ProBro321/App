@@ -119,6 +119,39 @@
   .nlist .ns .g{color:var(--completed);font-weight:800;}
   .nlist .ns .r{color:var(--dropped);font-weight:800;}
   .nlist .ndot{width:8px;height:8px;border-radius:50%;background:var(--brand);flex:0 0 8px;}
+  .lgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .lcard{position:relative;border-radius:16px;overflow:hidden;background:var(--surface);border:1px solid var(--line);cursor:pointer;
+    animation:rowIn .45s cubic-bezier(.22,.9,.3,1) both;animation-delay:calc(var(--i,0)*35ms);}
+  .lcard:active{transform:scale(.97);}
+  .lcard .cover{width:100%;height:auto;aspect-ratio:5/7;flex:none;border-radius:0;font-size:34px;}
+  .lcard .lcd{position:absolute;left:8px;right:8px;top:8px;display:flex;justify-content:space-between;gap:6px;pointer-events:none;}
+  .lcard .ltag{background:rgba(8,6,14,.78);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#fff;font-size:11px;font-weight:800;padding:4px 7px;border-radius:8px;}
+  .lcard .ltag.mine{background:var(--brand);}
+  .lcard .linfo{padding:9px 10px 11px;}
+  .lcard .lt{font-weight:800;font-size:13.5px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px;}
+  .lcard .ls{font-size:11.5px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cdbox{margin-top:8px;padding:7px 8px;border-radius:10px;background:rgba(255,79,139,.1);border:1px solid rgba(255,79,139,.25);}
+  .cdbox .cl{font-size:10.5px;color:var(--muted);font-weight:700;}
+  .cdbox .cd{font-size:15px;font-weight:900;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:.2px;}
+  .cdbox.done{background:rgba(51,217,160,.1);border-color:rgba(51,217,160,.3);}
+  .cdbox.done .cd{color:var(--completed);font-size:13px;}
+  .dayhead{font-size:13px;font-weight:850;color:var(--muted);margin:16px 2px 8px;text-transform:uppercase;letter-spacing:.6px;}
+  .wrow{display:flex;gap:12px;align-items:center;padding:8px 2px;border-bottom:1px solid var(--line);cursor:pointer;animation:rowIn .4s both;animation-delay:calc(var(--i,0)*25ms);}
+  .wrow .cover{width:44px;height:62px;flex:0 0 44px;border-radius:9px;font-size:14px;}
+  .wrow .wt{font-weight:800;font-size:14px;line-height:1.25;}
+  .wrow .ws{font-size:12px;color:var(--muted);margin-top:3px;}
+  .wrow .wcd{margin-left:auto;text-align:right;font-weight:900;font-size:13.5px;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .wrow .wcd small{display:block;font-size:10.5px;color:var(--muted);font-weight:700;}
+  .ldhead{display:flex;gap:14px;margin-bottom:14px;}
+  .ldhead .cover{width:110px;height:156px;flex:0 0 110px;border-radius:14px;font-size:30px;}
+  .ldhead h3{margin:0 0 6px;font-size:18px;line-height:1.25;}
+  .gen{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+  .gen span{font-size:11px;font-weight:750;padding:3px 7px;border-radius:7px;background:var(--surface);border:1px solid var(--line);color:var(--muted);}
+  .ldesc{font-size:13.5px;line-height:1.5;color:var(--muted);margin:12px 0;white-space:pre-line;}
+  .bigcd{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 4px;}
+  .bigcd div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 4px;text-align:center;}
+  .bigcd b{display:block;font-size:22px;font-weight:900;font-variant-numeric:tabular-nums;}
+  .bigcd small{font-size:10.5px;color:var(--muted);font-weight:700;}
   .newbanner{margin:0 0 12px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,rgba(51,217,160,.16),rgba(79,163,255,.12));border:1px solid rgba(51,217,160,.35);animation:slidein .45s cubic-bezier(.22,.9,.3,1);}
   .newbanner b{display:block;font-size:14px;margin-bottom:6px;}
   .newbanner .nb{display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font-size:13.5px;font-weight:700;}
@@ -262,6 +295,14 @@
     <div id="topSuggest"></div>
   </div>
 
+  <!-- LIVE (seasons + countdowns) -->
+  <div class="view hidden" id="view-live">
+    <div class="topbar"><h1>Anime <span>Live</span></h1><button class="iconbtn" id="gear2" aria-label="Settings">⚙</button></div>
+    <div class="chiprow" id="liveSeasons"></div>
+    <div class="chiprow" id="liveFilter"></div>
+    <div id="liveBody"></div>
+  </div>
+
   <!-- STATS -->
   <div class="view hidden" id="view-stats">
     <div class="topbar"><h1>My <span>Stats</span></h1></div>
@@ -273,8 +314,8 @@
   <button class="navbtn on" data-nav="list"><span class="ic">📺</span>List</button>
   <button class="navbtn" data-nav="top"><span class="ic">🏆</span>Top 10</button>
   <button class="fab" id="fab" aria-label="Add">+</button>
+  <button class="navbtn" data-nav="live"><span class="ic">⏱</span>Live</button>
   <button class="navbtn" data-nav="stats"><span class="ic">📊</span>Stats</button>
-  <button class="navbtn" id="navSettings"><span class="ic">⚙</span>Settings</button>
 </div></div>
 
 <!-- DETAIL -->
@@ -288,6 +329,10 @@
   <div class="grabber"><i></i></div>
   <h3>🔔 Notifications</h3>
   <div id="bellBody"></div>
+</div></div>
+<div class="sheet-overlay" id="liveSheet"><div class="sheet">
+  <div class="grabber"><i></i></div>
+  <div id="liveDetail"></div>
 </div></div>
 <div class="sheet-overlay" id="addSheet"><div class="sheet">
   <div class="grabber" id="addGrab"><i></i></div>
@@ -641,6 +686,7 @@ function render(){
   if(view==="list")renderList();
   if(view==="top")renderTop();
   if(view==="stats")renderStats();
+  if(view==="live")renderLive();
   if(detailId)renderDetail();
 }
 
@@ -1336,7 +1382,7 @@ let pasteAs="watching";
 function openSettings(){renderPasteAs();updateCoverBar();renderAirSettings();if(window.Cloud)Cloud.panel($("cloudBox"));openSheet($("setSheet"));}
 function renderPasteAs(){const w=$("pasteAs");w.innerHTML="";
   [["watching","Watching"],["completed","Completed"],["plan","Plan to watch"]].forEach(([k,l])=>w.appendChild(mkChip(l,pasteAs===k,()=>{pasteAs=k;renderPasteAs();})));}
-$("gear").onclick=openSettings;$("navSettings").onclick=openSettings;
+$("gear").onclick=openSettings;
 $("setDone").onclick=()=>closeSheet($("setSheet"));
 $("pasteBtn").onclick=()=>{
   const lines=$("pasteBox").value.split(/\n/).map(l=>l.replace(/^[\s•\-*\d.)]+(?=\D)/,"").trim()).filter(Boolean);
@@ -1430,7 +1476,154 @@ attachDrag($("addSheet"),()=>closeSheet($("addSheet")));
 attachDrag($("setSheet"),()=>closeSheet($("setSheet")));
 attachDrag($("bellSheet"),()=>closeSheet($("bellSheet")));
 $("bell").onclick=openBell;
+/* ---------- LIVE: seasons & countdowns (AniList) ---------- */
+const SEASONS=["WINTER","SPRING","SUMMER","FALL"],SEASON_NAME={WINTER:"Winter",SPRING:"Spring",SUMMER:"Summer",FALL:"Fall"};
+function seasonOf(d){return {s:SEASONS[Math.floor(d.getMonth()/3)],y:d.getFullYear()};}
+function shiftSeason(o,n){let i=SEASONS.indexOf(o.s)+n,y=o.y;while(i<0){i+=4;y--;}while(i>3){i-=4;y++;}return {s:SEASONS[i],y};}
+const nowSeason=seasonOf(new Date());
+let liveTab=null,liveFilt="all",liveData={},livePage={},liveBusy=false,liveErr="";
+function liveTabs(){
+  return [{k:"week",l:"📅 This week"},...[-1,0,1,2].map(n=>{const o=shiftSeason(nowSeason,n);return {k:o.s+"-"+o.y,l:SEASON_NAME[o.s]+" "+o.y+(n===0?" · now":n===1?" · next":"")};})];
+}
+try{const c=JSON.parse(localStorage.getItem("animelist_live")||"null");if(c&&c.v===1)liveData=c.d||{};}catch(e){}
+function saveLiveCache(){try{localStorage.setItem("animelist_live",JSON.stringify({v:1,d:liveData}));}catch(e){}}
+const LIVE_FIELDS=`id idMal format episodes status averageScore genres title{romaji english} coverImage{large} startDate{year month day} nextAiringEpisode{episode airingAt}`;
+function liveMap(m){
+  return {ani:m.id,mal:m.idMal||null,title:(m.title&&(m.title.english||m.title.romaji))||"?",alt:m.title&&m.title.english&&m.title.romaji!==m.title.english?m.title.romaji:"",
+    format:m.format||"",eps:m.episodes||null,st:m.status||"",score:m.averageScore||null,genres:(m.genres||[]).slice(0,4),cover:m.coverImage&&m.coverImage.large||null,
+    start:m.startDate||{},next:m.nextAiringEpisode?{ep:m.nextAiringEpisode.episode,at:m.nextAiringEpisode.airingAt}:null};
+}
+async function loadLive(k,more){
+  if(liveBusy)return;liveBusy=true;liveErr="";
+  try{
+    if(k==="week"){
+      const now=Math.floor(Date.now()/1000);let list=[],page=1,has=true;
+      while(has&&page<=4){
+        const j=await aniQuery(`query($a:Int,$b:Int,$p:Int){Page(page:$p,perPage:50){pageInfo{hasNextPage}airingSchedules(airingAt_greater:$a,airingAt_lesser:$b,sort:TIME){episode airingAt media{${LIVE_FIELDS} isAdult countryOfOrigin}}}}`,{a:now-3600*6,b:now+7*86400,p:page});
+        const P=j.data.Page;has=P.pageInfo.hasNextPage;page++;
+        list=list.concat(P.airingSchedules.filter(x=>x.media&&!x.media.isAdult&&x.media.countryOfOrigin==="JP").map(x=>({...liveMap(x.media),ep:x.episode,at:x.airingAt})));
+      }
+      liveData.week={ts:Date.now(),list};
+    }else{
+      const [S,Y]=k.split("-");const p=more?(livePage[k]||1)+1:1;
+      const j=await aniQuery(`query($s:MediaSeason,$y:Int,$p:Int){Page(page:$p,perPage:40){pageInfo{hasNextPage}media(season:$s,seasonYear:$y,type:ANIME,isAdult:false,sort:POPULARITY_DESC){${LIVE_FIELDS}}}}`,{s:S,y:+Y,p});
+      const P=j.data.Page;const got=P.media.map(liveMap);
+      liveData[k]={ts:Date.now(),list:more&&liveData[k]?liveData[k].list.concat(got):got,more:P.pageInfo.hasNextPage};
+      livePage[k]=p;
+    }
+    saveLiveCache();
+  }catch(e){liveErr=e.message==="busy"?"AniList is busy — try again in a few seconds.":"Can't reach AniList right now"+(liveData[k]?" — showing the last saved list.":".");}
+  liveBusy=false;if(view==="live")renderLive(!more);
+}
+function cdParts(sec){sec=Math.max(0,Math.floor(sec));return {d:Math.floor(sec/86400),h:Math.floor(sec%86400/3600),m:Math.floor(sec%3600/60),s:sec%60};}
+function cdText(at){
+  const sec=at-Date.now()/1000;if(sec<=0)return "Out now ✓";
+  const {d,h,m,s}=cdParts(sec),pad=n=>String(n).padStart(2,"0");
+  if(d>=60)return Math.floor(d/30)+"mo "+(d%30)+"d";
+  return (d?d+"d ":"")+pad(h)+":"+pad(m)+":"+pad(s);
+}
+function startAt(x){const s=x.start||{};if(!s.year||!s.month||!s.day)return null;return new Date(s.year,s.month-1,s.day).getTime()/1000;}
+function startTxt(x){const s=x.start||{};const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  if(!s.year)return "Date not announced";if(!s.month)return String(s.year);if(!s.day)return M[s.month-1]+" "+s.year;return s.day+" "+M[s.month-1]+" "+s.year;}
+function fmtName(f){return {TV:"TV",TV_SHORT:"TV short",MOVIE:"Movie",OVA:"OVA",ONA:"ONA",SPECIAL:"Special",MUSIC:"Music"}[f]||f||"";}
+function inMine(x){return state.items.find(i=>(x.ani&&i.ani===x.ani)||(x.mal&&i.mal===x.mal)||norm(i.title)===norm(x.title));}
+// what to count down to: next episode, else the premiere date
+function liveTarget(x){
+  if(x.at)return {at:x.at,label:"Ep "+x.ep};
+  if(x.next)return {at:x.next.at,label:x.next.ep===1?"Premiere":"Ep "+x.next.ep};
+  const sa=startAt(x);if(sa&&sa>Date.now()/1000)return {at:sa,label:"Premiere",approx:true};
+  return null;
+}
+function renderLive(anim){
+  if(!liveTab)liveTab=(()=>{const n=shiftSeason(nowSeason,1);return n.s+"-"+n.y;})();
+  const sc=$("liveSeasons");sc.innerHTML="";
+  liveTabs().forEach(t=>sc.appendChild(mkChip(t.l,liveTab===t.k,()=>{liveTab=t.k;liveErr="";renderLive(true);})));
+  const onChip=sc.querySelector(".chip.on");if(onChip)sc.scrollLeft=Math.max(0,onChip.offsetLeft-sc.offsetLeft-16);
+  const fc=$("liveFilter");fc.innerHTML="";
+  const B=$("liveBody");const data=liveData[liveTab];
+  if((!data||Date.now()-data.ts>60*60000)&&!liveBusy&&navigator.onLine)setTimeout(()=>loadLive(liveTab),0);
+  if(!data){B.innerHTML=liveErr?`<div class="empty">${liveErr}</div>`:`<div class="spinner" style="margin:40px auto"></div>`;return;}
+  const filts=liveTab==="week"?[["all","All"],["mine","In my list"]]:[["all","All"],["airing","Airing"],["upcoming","Not started"],["mine","In my list"]];
+  if(!filts.some(f=>f[0]===liveFilt))liveFilt="all";
+  filts.forEach(([k,l])=>fc.appendChild(mkChip(l,liveFilt===k,()=>{liveFilt=k;renderLive(true);})));
+  let list=data.list.slice();
+  if(liveFilt==="mine")list=list.filter(inMine);
+  if(liveFilt==="airing")list=list.filter(x=>x.st==="RELEASING");
+  if(liveFilt==="upcoming")list=list.filter(x=>x.st==="NOT_YET_RELEASED");
+  let html=liveErr?`<div class="mini" style="margin:0 2px 10px;color:var(--hold)">${liveErr}</div>`:"";
+  if(!list.length)html+=`<div class="empty">${liveFilt==="mine"?"None of your shows here.":"Nothing here yet."}</div>`;
+  else if(liveTab==="week"){
+    let day="";const today=new Date();today.setHours(0,0,0,0);
+    list.forEach((x,i)=>{
+      const d=new Date(x.at*1000),dd=new Date(d);dd.setHours(0,0,0,0);const diff=Math.round((dd-today)/86400000);
+      const dl=diff<0?"Earlier":diff===0?"Today":diff===1?"Tomorrow":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][d.getDay()]+" "+d.getDate()+"/"+(d.getMonth()+1);
+      if(dl!==day){day=dl;html+=`<div class="dayhead">${dl}</div>`;}
+      const mine=inMine(x);
+      html+=`<div class="wrow" data-k="${i}" style="--i:${anim?Math.min(i,20):0}">${coverHtml({title:x.title,cover:x.cover})}<div style="flex:1;min-width:0"><div class="wt">${mine?"⭐ ":""}${escapeHtml(x.title)}</div>
+        <div class="ws">Ep ${x.ep}${x.eps?" / "+x.eps:""} · ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}</div></div>
+        <div class="wcd"><span class="cd" data-at="${x.at}">${cdText(x.at)}</span></div></div>`;
+    });
+  }else{
+    html+=`<div class="lgrid">`+list.map((x,i)=>{
+      const t=liveTarget(x),mine=inMine(x);
+      const box=t?`<div class="cdbox"><div class="cl">${t.label} in</div><div class="cd" data-at="${t.at}">${cdText(t.at)}</div></div>`
+        :`<div class="cdbox done"><div class="cd">${x.st==="FINISHED"?"✓ Finished":x.st==="RELEASING"?"Airing":startTxt(x)}</div></div>`;
+      return `<div class="lcard" data-k="${i}" style="--i:${anim?Math.min(i,16):0}">${coverHtml({title:x.title,cover:x.cover})}
+        <div class="lcd"><span class="ltag">${fmtName(x.format)}${x.eps?" · "+x.eps+" ep":""}</span>${mine?`<span class="ltag mine">In list</span>`:x.score?`<span class="ltag">★ ${(x.score/10).toFixed(1)}</span>`:""}</div>
+        <div class="linfo"><div class="lt">${escapeHtml(x.title)}</div><div class="ls">${escapeHtml(x.genres.slice(0,2).join(" · "))||startTxt(x)}</div>${box}</div></div>`;
+    }).join("")+`</div>`;
+    if(data.more&&liveFilt==="all")html+=`<button class="more" id="liveMore">${liveBusy?"Loading…":"Show more"}</button>`;
+  }
+  B.innerHTML=html;
+  B.querySelectorAll("[data-k]").forEach(el=>el.onclick=()=>openLive(list[+el.dataset.k]));
+  if($("liveMore"))$("liveMore").onclick=()=>{$("liveMore").textContent="Loading…";loadLive(liveTab,true);};
+}
+setInterval(()=>{
+  if(view!=="live"&&!$("liveSheet").classList.contains("on"))return;
+  document.querySelectorAll("#view-live .cd[data-at], #liveSheet [data-at]").forEach(el=>{
+    const at=+el.dataset.at;
+    if(el.dataset.part)el.textContent=String(cdParts(at-Date.now()/1000)[el.dataset.part]).padStart(2,"0");
+    else el.textContent=cdText(at);
+  });
+},1000);
+async function openLive(x){
+  const mine=inMine(x),t=liveTarget(x),D=$("liveDetail");
+  const paint=extra=>{
+    D.innerHTML=`<div class="ldhead">${coverHtml({title:x.title,cover:x.cover})}<div style="min-width:0">
+      <h3>${escapeHtml(x.title)}</h3>${x.alt?`<div class="mini" style="margin:0">${escapeHtml(x.alt)}</div>`:""}
+      <div class="mini" style="margin:6px 0 0">${fmtName(x.format)}${x.eps?" · "+x.eps+" episodes":""} · Starts ${startTxt(x)}${x.score?" · ★ "+(x.score/10).toFixed(1):""}</div>
+      ${extra&&extra.studio?`<div class="mini" style="margin:4px 0 0">🎬 ${escapeHtml(extra.studio)}</div>`:""}
+      <div class="gen">${x.genres.map(g=>`<span>${escapeHtml(g)}</span>`).join("")}</div></div></div>
+      ${t?`<div class="mini" style="margin:0 2px;font-weight:800;color:var(--text)">${t.label} in${t.approx?" (about)":""}</div>
+        <div class="bigcd">${["d","h","m","s"].map((k,i)=>`<div><b data-at="${t.at}" data-part="${k}">${String(cdParts(t.at-Date.now()/1000)[k]).padStart(2,"0")}</b><small>${["days","hours","min","sec"][i]}</small></div>`).join("")}</div>
+        <div class="mini" style="margin:0 2px">${whenTxt(t.at)}${t.approx?" (exact time not announced yet)":""}</div>`:""}
+      <div class="ldesc">${extra?escapeHtml(extra.desc||"No description yet."):`<span class="spinner" style="display:inline-block;margin:0"></span>`}</div>
+      ${mine?`<button class="ghostbtn brand" id="lOpen">Open in my list</button>`
+        :`<button class="ghostbtn brand" id="lPlan">+ Plan to watch</button><button class="ghostbtn" id="lWatch">+ Watching</button>`}`;
+    if($("lOpen"))$("lOpen").onclick=()=>{closeSheet($("liveSheet"));setTimeout(()=>openDetail(mine.id),200);};
+    const add=st=>{
+      const now=Date.now();
+      state.items.push({id:id(),title:x.title,type:x.format==="MOVIE"?"Movie":"Anime",status:st,score:null,note:"",total:x.eps||null,w:"",cover:x.cover||null,mal:x.mal||null,ani:x.ani,
+        aniTried:true,malTried:true,addedAt:now,startedAt:st==="watching"?now:null,completedAt:null,updatedAt:now});
+      save();okPop();toast("Added "+x.title+(st==="plan"?" to Plan to watch":" to Watching"));
+      closeSheet($("liveSheet"));refreshAiring(true);renderLive();
+    };
+    if($("lPlan"))$("lPlan").onclick=()=>add("plan");
+    if($("lWatch"))$("lWatch").onclick=()=>add("watching");
+  };
+  paint(null);openSheet($("liveSheet"));
+  try{
+    const j=await aniQuery(`query($id:Int){Media(id:$id){description(asHtml:false) studios(isMain:true){nodes{name}}}}`,{id:x.ani});
+    const m=j.data.Media;
+    const desc=(m.description||"").replace(/<br\s*\/?>/gi,"\n").replace(/<[^>]+>/g,"").replace(/\n{3,}/g,"\n\n").trim();
+    if($("liveSheet").classList.contains("on"))paint({desc:desc.length>600?desc.slice(0,600)+"…":desc,studio:(m.studios&&m.studios.nodes[0]&&m.studios.nodes[0].name)||""});
+  }catch(e){if($("liveSheet").classList.contains("on"))paint({desc:"Couldn't load the description."});}
+}
+attachDrag($("liveSheet"),()=>closeSheet($("liveSheet")));
+$("gear2").onclick=()=>openSettings();
+
 window.appBack=function(){
+  if($("liveSheet").classList.contains("on")){closeSheet($("liveSheet"));return true;}
   if($("addSheet").classList.contains("on")){closeSheet($("addSheet"));return true;}
   if($("detailSheet").classList.contains("on")){closeDetail();return true;}
   if($("setSheet").classList.contains("on")){closeSheet($("setSheet"));return true;}
