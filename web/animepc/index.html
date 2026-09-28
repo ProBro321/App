@@ -154,14 +154,18 @@ try{if(!/[?&]stay/.test(location.search)&&Math.min(screen.width,screen.height)<=
   .bigcd div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 4px;text-align:center;}
   .bigcd b{display:block;font-size:22px;font-weight:900;font-variant-numeric:tabular-nums;}
   .bigcd small{font-size:10.5px;color:var(--muted);font-weight:700;}
-  .syncbtn span{display:inline-block;font-size:20px;line-height:1;}
-  .syncbtn.spin span{animation:spin .75s linear infinite;}
-  .syncbtn.ok{border-color:var(--completed);color:var(--completed);}
-  #ptr{position:fixed;left:50%;top:0;z-index:55;width:40px;height:40px;margin-left:-20px;border-radius:50%;background:var(--surface);border:1px solid var(--line);
-    display:grid;place-items:center;color:var(--brand);font-size:20px;box-shadow:0 6px 18px rgba(0,0,0,.4);transform:translateY(-60px);opacity:0;pointer-events:none;}
-  #ptr.back{transition:transform .3s cubic-bezier(.22,.9,.3,1),opacity .3s;}
-  #ptr.spin i{animation:spin .75s linear infinite;}
-  #ptr i{display:inline-block;font-style:normal;}
+  /* Chrome-style refresh circle */
+  #ptr{position:fixed;left:50%;top:0;z-index:95;width:52px;height:52px;margin-left:-26px;border-radius:50%;background:#2d2839;
+    box-shadow:0 4px 14px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.06);display:grid;place-items:center;pointer-events:none;
+    transform:translateY(-64px) scale(.5);opacity:0;}
+  #ptr.anim{transition:transform .32s cubic-bezier(.22,.9,.3,1),opacity .25s;}
+  #ptr.show{transform:translateY(72px) scale(1);opacity:1;}
+  #ptr svg{width:32px;height:32px;display:block;}
+  #ptr circle{fill:none;stroke:var(--brand);stroke-width:5;stroke-linecap:round;stroke-dasharray:1,200;}
+  #ptr.spin svg{animation:ptrRot 1.4s linear infinite;}
+  #ptr.spin circle{animation:ptrDash 1.4s ease-in-out infinite;}
+  @keyframes ptrRot{to{transform:rotate(360deg);}}
+  @keyframes ptrDash{0%{stroke-dasharray:1,200;stroke-dashoffset:0;}50%{stroke-dasharray:89,200;stroke-dashoffset:-35;}100%{stroke-dasharray:89,200;stroke-dashoffset:-124;}}
   .newbanner{margin:0 0 12px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,rgba(51,217,160,.16),rgba(79,163,255,.12));border:1px solid rgba(51,217,160,.35);animation:slidein .45s cubic-bezier(.22,.9,.3,1);}
   .newbanner b{display:block;font-size:14px;margin-bottom:6px;}
   .newbanner .nb{display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font-size:13.5px;font-weight:700;}
@@ -364,7 +368,7 @@ try{if(!/[?&]stay/.test(location.search)&&Math.min(screen.width,screen.height)<=
 
   <!-- LIST -->
   <div class="view" id="view-list">
-    <div class="topbar"><h1>My <span>List</span></h1><div style="display:flex;gap:8px"><button class="iconbtn syncbtn" id="syncBtn" aria-label="Refresh"><span>⟳</span></button><button class="iconbtn bellbtn" id="bell" aria-label="Notifications">🔔<span class="bdot hidden" id="bellDot"></span></button><button class="iconbtn" id="gear" aria-label="Settings">⚙</button></div></div>
+    <div class="topbar"><h1>My <span>List</span></h1><div style="display:flex;gap:8px"><button class="iconbtn bellbtn" id="bell" aria-label="Notifications">🔔<span class="bdot hidden" id="bellDot"></span></button><button class="iconbtn" id="gear" aria-label="Settings">⚙</button></div></div>
     <div class="strip" id="strip"></div>
     <div class="coverbar hidden" id="coverBar"><span id="coverTxt">Loading covers…</span><span class="mbar"><i id="coverFill" style="width:0%"></i></span></div>
     <div class="search"><span>⌕</span><input id="q" type="search" placeholder="Search your list" autocomplete="off"><button id="qClear" class="hidden" aria-label="Clear">✕</button></div>
@@ -384,7 +388,7 @@ try{if(!/[?&]stay/.test(location.search)&&Math.min(screen.width,screen.height)<=
 
   <!-- LIVE (seasons + countdowns) -->
   <div class="view hidden" id="view-live">
-    <div class="topbar"><h1>Anime <span>Live</span></h1><div style="display:flex;gap:8px"><button class="iconbtn syncbtn" id="syncBtn2" aria-label="Refresh"><span>⟳</span></button><button class="iconbtn" id="gear2" aria-label="Settings">⚙</button></div></div>
+    <div class="topbar"><h1>Anime <span>Live</span></h1><button class="iconbtn" id="gear2" aria-label="Settings">⚙</button></div>
     <div class="chiprow" id="liveSeasons"></div>
     <div class="chiprow" id="liveFilter"></div>
     <div id="liveBody"></div>
@@ -397,7 +401,7 @@ try{if(!/[?&]stay/.test(location.search)&&Math.min(screen.width,screen.height)<=
   </div>
 </div>
 
-<div id="ptr"><i>⟳</i></div>
+<div id="ptr"><svg viewBox="0 0 50 50"><circle cx="25" cy="25" r="20"/></svg></div>
 <div class="navbar"><div class="navin">
   <button class="navbtn on" data-nav="list"><span class="ic">📺</span>List</button>
   <button class="navbtn" data-nav="top"><span class="ic">🏆</span>Top 10</button>
@@ -1805,46 +1809,51 @@ function applyCloud(str){
   render();
   if(!syncManual)toast("Updated from your other device ✓");
 }
-function setSpin(on){["syncBtn","syncBtn2"].forEach(k=>{const b=$(k);if(b){b.classList.toggle("spin",on);if(on)b.classList.remove("ok");}});}
-async function doRefresh(){
-  syncManual=true;setSpin(true);const t0=Date.now();let msg="Up to date ✓";
+const PTR=$("ptr"),PTRC=PTR.querySelector("circle");
+let ptrOn=false;
+function setSpin(on){
+  if(on===ptrOn)return;ptrOn=on;
+  PTR.classList.add("anim");
+  if(on){PTRC.style.strokeDasharray="";PTR.style.transform="";PTR.style.opacity="";PTR.classList.add("spin","show");}
+  else{PTR.classList.remove("show");setTimeout(()=>{if(!ptrOn)PTR.classList.remove("spin");},320);}
+}
+async function doRefresh(quiet){
+  syncManual=true;setSpin(true);const t0=Date.now();let msg="";
   try{
     if(window.Cloud&&Cloud.signedIn()){const r=await Cloud.sync();if(r&&r.changed)msg="Updated with your latest changes ✓";if(r&&r.offline)msg="You're offline — showing what's saved on this device";}
-    else msg="Refreshed ✓ — sign in to Cloud save (⚙) to sync your devices";
   }catch(e){msg="Couldn't reach the cloud — try again in a moment";}
   if(view==="live"&&liveData[liveTab]){liveData[liveTab].ts=0;loadLive(liveTab);}
-  refreshAiring(true);
-  await new Promise(r=>setTimeout(r,Math.max(0,600-(Date.now()-t0))));
-  setSpin(false);["syncBtn","syncBtn2"].forEach(k=>{const b=$(k);if(b){b.classList.add("ok");setTimeout(()=>b.classList.remove("ok"),1400);}});
-  render();toast(msg);syncManual=false;
+  if(!quiet)refreshAiring(true);
+  await new Promise(r=>setTimeout(r,Math.max(0,700-(Date.now()-t0))));
+  setSpin(false);render();if(msg)toast(msg);syncManual=false;
 }
-$("syncBtn").onclick=doRefresh;$("syncBtn2").onclick=doRefresh;
-// phone: pull the page down from the top to refresh
+// F5 / reopening: show the circle while it fetches your latest data
+setTimeout(()=>doRefresh(true),60);
+// phone: pull the page down from the top to refresh (like Chrome)
 (function(){
-  const P=$("ptr");let y0=null,d=0,active=false;
+  let y0=null,d=0;
   document.addEventListener("touchstart",e=>{
-    if(window.scrollY>0||document.querySelector(".sheet-overlay.on")||e.touches.length!==1||active){y0=null;return;}
-    y0=e.touches[0].clientY;d=0;P.classList.remove("back");
+    if(window.scrollY>0||document.querySelector(".sheet-overlay.on")||e.touches.length!==1||ptrOn){y0=null;return;}
+    y0=e.touches[0].clientY;d=0;PTR.classList.remove("anim","spin");
   },{passive:true});
   document.addEventListener("touchmove",e=>{
     if(y0==null)return;d=e.touches[0].clientY-y0;
-    if(d<=0||window.scrollY>0){P.style.opacity=0;P.style.transform="translateY(-60px)";return;}
-    const pull=Math.min(110,d*.5);P.style.opacity=Math.min(1,pull/60);
-    P.style.transform=`translateY(${pull-40}px) rotate(${pull*4}deg)`;
+    const pull=Math.max(0,Math.min(120,d*.55));
+    if(pull<=0||window.scrollY>0){PTR.style.opacity=0;PTR.style.transform="";return;}
+    const k=Math.min(1,pull/80);
+    PTR.style.opacity=Math.min(1,pull/40);
+    PTR.style.transform=`translateY(${pull-44}px) scale(${.6+.4*k}) rotate(${pull*3}deg)`;
+    PTRC.style.strokeDasharray=`${Math.round(k*89)},200`;
   },{passive:true});
-  document.addEventListener("touchend",async()=>{
-    if(y0==null)return;y0=null;P.classList.add("back");
-    if(d*.5>=70&&!active){
-      active=true;P.style.transform="translateY(26px)";P.classList.add("spin");
-      await doRefresh();
-      P.classList.remove("spin");active=false;
-    }
-    P.style.opacity=0;P.style.transform="translateY(-60px)";
+  document.addEventListener("touchend",()=>{
+    if(y0==null)return;y0=null;
+    if(d*.55>=80&&!ptrOn){doRefresh();return;}
+    PTR.classList.add("anim");PTR.style.opacity=0;PTR.style.transform="";
   });
 })();
 lastTop=JSON.stringify(state.top);
 Cloud.init({app:"anime",key:KEY,toast:m=>toast(m),isEmpty:()=>!state.items.length,summary:()=>state.items.length+" shows",
-  merge:mergeAnime,apply:applyCloud,busy:on=>{if(!syncManual)setSpin(on);}});
+  merge:mergeAnime,apply:applyCloud,busy:()=>{}});
 </script>
 </body>
 </html>
