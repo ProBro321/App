@@ -43,6 +43,7 @@ try{if(!/[?&]stay/.test(location.search)&&Math.min(screen.width,screen.height)<=
   .tile .k{font-size:11.5px;color:var(--muted);margin-top:2px;}
 
   .search{position:relative;margin-bottom:10px;}
+  .search input::-webkit-search-cancel-button{-webkit-appearance:none;display:none;}
   .search input{width:100%;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:15px;
     padding:13px 40px 13px 40px;font-size:15px;}
   .search input:focus{outline:none;border-color:var(--brand);}
@@ -389,6 +390,7 @@ try{if(!/[?&]stay/.test(location.search)&&Math.min(screen.width,screen.height)<=
   <!-- LIVE (seasons + countdowns) -->
   <div class="view hidden" id="view-live">
     <div class="topbar"><h1>Anime <span>Live</span></h1><button class="iconbtn" id="gear2" aria-label="Settings">⚙</button></div>
+    <div class="search"><span>⌕</span><input id="lq" type="search" placeholder="Search any anime…" autocomplete="off"><button id="lqClear" class="hidden" aria-label="Clear">✕</button></div>
     <div class="chiprow" id="liveSeasons"></div>
     <div class="chiprow" id="liveFilter"></div>
     <div id="liveBody"></div>
@@ -1663,6 +1665,8 @@ function liveTarget(x){
 }
 function renderLive(anim){
   if(!liveTab)liveTab=(()=>{const n=shiftSeason(nowSeason,1);return n.s+"-"+n.y;})();
+  $("liveSeasons").classList.toggle("hidden",!!liveQ);$("liveFilter").classList.toggle("hidden",!!liveQ);
+  if(liveQ){renderLiveSearch(anim);return;}
   const sc=$("liveSeasons");sc.innerHTML="";
   liveTabs().forEach(t=>sc.appendChild(mkChip(t.l,liveTab===t.k,()=>{liveTab=t.k;liveErr="";renderLive(true);})));
   const onChip=sc.querySelector(".chip.on");if(onChip)sc.scrollLeft=Math.max(0,onChip.offsetLeft-sc.offsetLeft-16);
@@ -1691,20 +1695,45 @@ function renderLive(anim){
         <div class="wcd"><span class="cd" data-at="${x.at}">${cdText(x.at)}</span></div></div>`;
     });
   }else{
-    html+=`<div class="lgrid">`+list.map((x,i)=>{
-      const t=liveTarget(x),mine=inMine(x);
-      const box=t?`<div class="cdbox"><div class="cl">${t.label} in</div><div class="cd" data-at="${t.at}">${cdText(t.at)}</div></div>`
-        :`<div class="cdbox done"><div class="cd">${x.st==="FINISHED"?"✓ Finished":x.st==="RELEASING"?"Airing":startTxt(x)}</div></div>`;
-      return `<div class="lcard" data-k="${i}" style="--i:${anim?Math.min(i,16):0}">${coverHtml({title:x.title,cover:x.cover})}
-        <div class="lcd"><span class="ltag">${fmtName(x.format)}${x.eps?" · "+x.eps+" ep":""}</span>${mine?`<span class="ltag mine">In list</span>`:x.score?`<span class="ltag">★ ${(x.score/10).toFixed(1)}</span>`:""}</div>
-        <div class="linfo"><div class="lt">${escapeHtml(x.title)}</div><div class="ls">${escapeHtml(x.genres.slice(0,2).join(" · "))||startTxt(x)}</div>${box}</div></div>`;
-    }).join("")+`</div>`;
+    html+=`<div class="lgrid">`+list.map((x,i)=>liveCard(x,i,anim)).join("")+`</div>`;
     if(data.more&&liveFilt==="all")html+=`<button class="more" id="liveMore">${liveBusy?"Loading…":"Show more"}</button>`;
   }
   B.innerHTML=html;
   B.querySelectorAll("[data-k]").forEach(el=>el.onclick=()=>openLive(list[+el.dataset.k]));
   if($("liveMore"))$("liveMore").onclick=()=>{$("liveMore").textContent="Loading…";loadLive(liveTab,true);};
 }
+function liveCard(x,i,anim){
+      const t=liveTarget(x),mine=inMine(x);
+      const box=t?`<div class="cdbox"><div class="cl">${t.label} in</div><div class="cd" data-at="${t.at}">${cdText(t.at)}</div></div>`
+        :`<div class="cdbox done"><div class="cd">${x.st==="FINISHED"?"✓ Finished":x.st==="RELEASING"?"Airing":startTxt(x)}</div></div>`;
+      return `<div class="lcard" data-k="${i}" style="--i:${anim?Math.min(i,16):0}">${coverHtml({title:x.title,cover:x.cover})}
+        <div class="lcd"><span class="ltag">${fmtName(x.format)}${x.eps?" · "+x.eps+" ep":""}</span>${mine?`<span class="ltag mine">In list</span>`:x.score?`<span class="ltag">★ ${(x.score/10).toFixed(1)}</span>`:""}</div>
+        <div class="linfo"><div class="lt">${escapeHtml(x.title)}</div><div class="ls">${escapeHtml(x.genres.slice(0,2).join(" · "))||startTxt(x)}</div>${box}</div></div>`;
+}
+/* search any anime on AniList */
+let liveQ="",liveSR={q:"",list:[],err:""},liveST=null;
+async function runLiveSearch(q){
+  try{
+    const j=await aniQuery(`query($s:String){Page(perPage:30){media(search:$s,type:ANIME,isAdult:false,sort:[SEARCH_MATCH,POPULARITY_DESC]){${LIVE_FIELDS}}}}`,{s:q});
+    if(q!==liveQ)return;liveSR={q,list:((j.data&&j.data.Page&&j.data.Page.media)||[]).map(liveMap),err:""};
+  }catch(e){if(q!==liveQ)return;liveSR={q,list:[],err:e.message==="busy"?"AniList is busy — try again in a few seconds.":"Can't search right now — check your internet."};}
+  if(view==="live")renderLive(true);
+}
+function renderLiveSearch(anim){
+  const B=$("liveBody");
+  if(liveSR.q!==liveQ){B.innerHTML=`<div class="spinner" style="margin:40px auto"></div>`;return;}
+  if(liveSR.err){B.innerHTML=`<div class="empty">${liveSR.err}</div>`;return;}
+  const list=liveSR.list;
+  if(!list.length){B.innerHTML=`<div class="empty">No anime found for “${escapeHtml(liveQ)}”.<br>Try the Japanese or English name.</div>`;return;}
+  B.innerHTML=`<div class="mini" style="margin:0 2px 10px">${list.length} result${list.length>1?"s":""} for “${escapeHtml(liveQ)}”</div><div class="lgrid">${list.map((x,i)=>liveCard(x,i,anim)).join("")}</div>`;
+  B.querySelectorAll("[data-k]").forEach(el=>el.onclick=()=>openLive(list[+el.dataset.k]));
+}
+$("lq").oninput=e=>{
+  liveQ=e.target.value.trim();$("lqClear").classList.toggle("hidden",!liveQ);clearTimeout(liveST);
+  renderLive(!liveQ);if(liveQ){const q=liveQ;liveST=setTimeout(()=>runLiveSearch(q),450);}
+};
+$("lq").onkeydown=e=>{if(e.key==="Enter"){e.target.blur();}};
+$("lqClear").onclick=()=>{$("lq").value="";liveQ="";liveSR={q:"",list:[],err:""};$("lqClear").classList.add("hidden");renderLive(true);};
 setInterval(()=>{
   if(view!=="live"&&!$("liveSheet").classList.contains("on"))return;
   document.querySelectorAll("#view-live .cd[data-at], #liveSheet [data-at]").forEach(el=>{
