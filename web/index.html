@@ -467,7 +467,7 @@
       <div><label class="flabel" data-t="monthlyLimit">Monthly limit (₪)</label>
         <input class="field num" id="suLimit" type="number" inputmode="decimal" placeholder="0"></div>
       <div><label class="flabel" data-t="resetDay">Resets on day</label>
-        <input class="field num" id="suReset" type="number" inputmode="numeric" min="1" max="28" value="1"></div>
+        <input class="field num" id="suReset" type="number" inputmode="numeric" min="1" max="31" value="1"></div>
     </div>
     </div>
     <label class="flabel" data-t="startMoney">Money you have right now (₪, optional)</label>
@@ -995,7 +995,7 @@ function normalize(s){
   if(!Array.isArray(s.fixedBills))s.fixedBills=[];
   if(!s.billRuns||typeof s.billRuns!=="object")s.billRuns={};
   s.tx.forEach(t=>{t.amount=+t.amount||0;if(!t.id)t.id=id();if(!t.ts)t.ts=Date.now();if(t.cardId===undefined)t.cardId=null;if(!CAT_STYLE[t.cat])t.cat="Other";});
-  s.cards.forEach(c=>{c.limit=+c.limit||0;c.resetDay=Math.min(28,Math.max(1,parseInt(c.resetDay)||1));});
+  s.cards.forEach(c=>{c.limit=+c.limit||0;c.resetDay=Math.min(31,Math.max(1,parseInt(c.resetDay)||1));});
   if(!s.cards.find(c=>c.id===s.activeCard))s.activeCard=s.cards[0].id;
   if(!s.budgets||typeof s.budgets!=="object")s.budgets={};
   s.fixedBills.forEach(b=>{b.payments=Math.max(0,parseInt(b.payments)||0);b.paid=Math.max(0,parseInt(b.paid)||0);});
@@ -1051,12 +1051,14 @@ function deltaHtml(curV,prev,vsLabel){
 }
 
 /* ---------- card cycles & pace ---------- */
+// day 29–31 in a shorter month means that month's last day
+function dayIn(y,m,d){return Math.min(d,new Date(y,m+1,0).getDate());}
 function cycleStart(card){
   const now=new Date();let y=now.getFullYear(),m=now.getMonth();
-  if(now.getDate()<card.resetDay){m--;if(m<0){m=11;y--;}}
-  return new Date(y,m,card.resetDay,0,0,0,0).getTime();
+  if(now.getDate()<dayIn(y,m,card.resetDay)){m--;if(m<0){m=11;y--;}}
+  return new Date(y,m,dayIn(y,m,card.resetDay),0,0,0,0).getTime();
 }
-function nextReset(card){const cs=new Date(cycleStart(card));return new Date(cs.getFullYear(),cs.getMonth()+1,card.resetDay).getTime();}
+function nextReset(card){const cs=new Date(cycleStart(card));const y=cs.getFullYear(),m=cs.getMonth()+1;return new Date(y,m,dayIn(y,m,card.resetDay)).getTime();}
 function cardSpent(cid){
   const card=cardById(cid);if(!card)return 0;
   const cs=cycleStart(card);let sum=0;
@@ -1083,8 +1085,9 @@ function autoApplyBills(){
   const now=new Date();const mk=billMonthKey(now);let applied=[],finished=[];
   state.fixedBills.forEach(b=>{
     if(!b.day||!(+b.amount>0)||billDone(b))return;
-    if(now.getDate()>=b.day && state.billRuns[b.id]!==mk){
-      const due=new Date(now.getFullYear(),now.getMonth(),b.day,12,0,0).getTime();
+    const bd=dayIn(now.getFullYear(),now.getMonth(),b.day);
+    if(now.getDate()>=bd && state.billRuns[b.id]!==mk){
+      const due=new Date(now.getFullYear(),now.getMonth(),bd,12,0,0).getTime();
       state.tx.push({id:id(),cat:b.cat,amount:+b.amount||0,type:"expense",note:b.note||b.name,
         cardId:!state.cashOnly&&cardById(b.cardId)?b.cardId:null,auto:true,ts:Math.min(due,Date.now())});
       state.billRuns[b.id]=mk;applied.push(b);countPayment(b,finished);
@@ -1100,7 +1103,8 @@ function upcomingBills(){
   const now=new Date(),today=now.getDate();
   return state.fixedBills.filter(b=>b.day&&(+b.amount||0)>0&&!billDone(b)).map(b=>{
     const applied=state.billRuns[b.id]===billMonthKey(now);
-    const due=(!applied&&b.day>=today)?new Date(now.getFullYear(),now.getMonth(),b.day):new Date(now.getFullYear(),now.getMonth()+1,b.day);
+    const y=now.getFullYear(),m=now.getMonth(),bd=dayIn(y,m,b.day);
+    const due=(!applied&&bd>=today)?new Date(y,m,bd):new Date(y,m+1,dayIn(y,m+1,b.day));
     return {b,due:due.getTime()};
   }).sort((a,b)=>a.due-b.due);
 }
@@ -1768,11 +1772,11 @@ function renderCardEditor(){
       <div class="r1"><label style="flex:1">${t("name")}<input class="field" value="${escapeHtml(c.name)}"></label>
         <button class="rowdel" aria-label="✕">✕</button></div>
       <div class="r1"><label>${t("limit")}<input class="field num" type="number" inputmode="decimal" value="${c.limit}"></label>
-        <label>${t("resetDay")}<input class="field num" type="number" inputmode="numeric" min="1" max="28" value="${c.resetDay}"></label></div>`;
+        <label>${t("resetDay")}<input class="field num" type="number" inputmode="numeric" min="1" max="31" value="${c.resetDay}"></label></div>`;
     const [nameI,limI,dayI]=row.querySelectorAll("input");
     nameI.oninput=()=>{c.name=nameI.value||t("defaultCard");save();};
     limI.oninput=()=>{c.limit=Math.max(0,parseFloat(limI.value)||0);save();};
-    dayI.onchange=()=>{c.resetDay=Math.min(28,Math.max(1,parseInt(dayI.value)||1));dayI.value=c.resetDay;save();};
+    dayI.onchange=()=>{c.resetDay=Math.min(31,Math.max(1,parseInt(dayI.value)||1));dayI.value=c.resetDay;save();};
     row.querySelector(".rowdel").onclick=()=>{
       if(state.cards.length<=1){toast(t("keepOne"));return;}
       if(!confirm(t("delCard",c.name)))return;
@@ -1795,7 +1799,7 @@ function renderBillEditor(){
     row.innerHTML=`
       <input value="${escapeHtml(b.name)}" class="field">
       <input class="field amt-i num" type="number" inputmode="decimal" value="${b.amount}">
-      <input class="field day-i num" type="number" inputmode="numeric" min="1" max="28" value="${b.day||1}">
+      <input class="field day-i num" type="number" inputmode="numeric" min="1" max="31" value="${b.day||1}">
       <button class="rowdel" aria-label="✕">✕</button>
       <select class="catsel">${catOpts}</select>
       <select class="cardsel">${cardOpts}</select>
@@ -1811,7 +1815,7 @@ function renderBillEditor(){
     refreshTag();
     nameI.oninput=()=>{b.name=nameI.value;save();};
     amtI.oninput=()=>{b.amount=Math.max(0,parseFloat(amtI.value)||0);save();refreshTag();};
-    dayI.onchange=()=>{b.day=Math.min(28,Math.max(1,parseInt(dayI.value)||1));dayI.value=b.day;save();refreshTag();};
+    dayI.onchange=()=>{b.day=Math.min(31,Math.max(1,parseInt(dayI.value)||1));dayI.value=b.day;save();refreshTag();};
     catSel.onchange=()=>{b.cat=catSel.value;save();};
     cardSel.onchange=()=>{b.cardId=cardSel.value;save();refreshTag();};
     row.querySelector(".rowdel").onclick=()=>{
@@ -1897,7 +1901,7 @@ $("suStartBtn").onclick=()=>{
   const c=state.cards[0];
   c.name=$("suCardName").value.trim()||t("defaultCard");
   c.limit=Math.max(0,parseFloat($("suLimit").value)||0);
-  c.resetDay=Math.min(28,Math.max(1,parseInt($("suReset").value)||1));
+  c.resetDay=Math.min(31,Math.max(1,parseInt($("suReset").value)||1));
   const startAmt=parseFloat($("suStart").value);
   if(isFinite(startAmt)&&startAmt!==0){
     state.tx.push({id:id(),cat:"Salary",amount:Math.abs(startAmt),type:startAmt>0?"income":"expense",note:t("startBalance"),cardId:null,auto:false,ts:Date.now()});
