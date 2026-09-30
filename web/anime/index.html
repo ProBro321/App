@@ -422,6 +422,19 @@ const T={
     confirmLoad:d=>`Replace everything here with your cloud save from ${d}?`,nothing:"Nothing saved in the cloud yet",
     restored:"Loaded from the cloud ✓",synced:"Updated from the cloud",outQ:"Sign out? Your data stays on this phone and in the cloud.",
     now:"just now",min:n=>n+" min ago",hr:n=>n+" h ago",day:n=>n+" d ago"},
+  ru:{title:"☁️ Облачная копия",off:"Облачная копия скоро заработает.",
+    intro:"Войдите, и данные будут сохраняться сами после каждого изменения. Новый телефон? Войдите снова — и всё вернётся.",
+    name:"Ваше имя",pass:"Пароль (минимум 6 символов)",go:"Войти / Создать аккаунт",
+    hint:"Новое имя создаёт новый аккаунт. Не забудьте пароль — его нельзя восстановить.",
+    signedAs:n=>`Вы вошли как <b>${n}</b>`,saved:a=>`✓ Сохранено в облаке ${a}`,saving:"Сохраняю…",never:"Ещё не сохранено",
+    err:e=>`⚠ Не удалось сохранить (${e}) — попробую снова`,offline:"Нет интернета — сохраню, когда он появится",
+    saveNow:"Сохранить сейчас",load:"Загрузить из облака",out:"Выйти",
+    working:"Вхожу…",badName:"Введите имя",shortPass:"Пароль должен быть не короче 6 символов",wrongPass:"Неверный пароль для этого имени",
+    tooMany:"Слишком много попыток — подождите минуту",net:"Нет подключения к интернету",created:"Аккаунт создан — сохраняю данные",welcome:"Вы вошли",
+    found:(d,x)=>`Найдена копия в облаке от ${d}${x?" ("+x+")":""}.\n\nЗагрузить её на этот телефон? Это заменит текущие данные.\n\nОтмена = оставить данные этого телефона и сохранить их в облако.`,
+    confirmLoad:d=>`Заменить всё копией из облака от ${d}?`,nothing:"В облаке пока ничего нет",
+    restored:"Загружено из облака ✓",synced:"Обновлено из облака",outQ:"Выйти? Данные останутся на телефоне и в облаке.",
+    now:"только что",min:n=>n+" мин назад",hr:n=>n+" ч назад",day:n=>n+" дн назад"},
   he:{title:"☁️ גיבוי בענן",off:"גיבוי בענן כמעט מוכן — יופעל בקרוב.",
     intro:"התחברו והנתונים יישמרו לבד בכל שינוי. טלפון חדש או איפוס? מתחברים שוב והכול חוזר.",
     name:"השם שלך",pass:"סיסמה (6 תווים לפחות)",go:"התחברות / יצירת חשבון",
@@ -437,7 +450,7 @@ const T={
     now:"עכשיו",min:n=>`לפני ${n} דק׳`,hr:n=>`לפני ${n} שע׳`,day:n=>`לפני ${n} ימים`}
 };
 let opt=null,initAt=0,timer=null,busy=false,status="",lastErr="",panels=[];
-const L=()=>T[(opt&&opt.lang&&opt.lang())==="he"?"he":"en"];
+const L=()=>{const l=opt&&opt.lang&&opt.lang();return T[l]||T.en;};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function sess(){try{return JSON.parse(localStorage.getItem(SESS)||"null");}catch(e){return null;}}
 function setSess(s){try{s?localStorage.setItem(SESS,JSON.stringify(s)):localStorage.removeItem(SESS);}catch(e){}}

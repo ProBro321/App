@@ -289,6 +289,30 @@
   html[dir=rtl]{--dir:rtl;}
   /* first-run setup */
   #setupSheet{z-index:80;}
+  .paychoice{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .paychoice button{border:2px solid var(--line);background:var(--surface);color:var(--text);border-radius:16px;padding:18px 8px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;}
+  .paychoice button.on{border-color:var(--brand);background:rgba(124,108,240,.16);}
+  body.cashonly #carousel,body.cashonly #dots,body.cashonly .cardonly,body.cashonly #cardToggle,body.cashonly #cardPickChips,
+  body.cashonly #histCardChips,body.cashonly #insCardChips,body.cashonly .cardsel{display:none!important;}
+  #tutOv{position:fixed;inset:0;z-index:120;background:rgba(5,5,10,.82);display:none;align-items:center;justify-content:center;padding:20px;}
+  #tutOv.on{display:flex;animation:tutFade .3s ease;}
+  @keyframes tutFade{from{opacity:0}}
+  .tutcard{width:100%;max-width:440px;background:var(--surface,#16161f);border:1px solid var(--line);border-radius:28px;padding:26px 22px 18px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6);}
+  .tutcard.swap{animation:tutIn .35s cubic-bezier(.22,.9,.3,1);}
+  @keyframes tutIn{from{opacity:0;transform:translateY(14px) scale(.98)}}
+  .tutdots{display:flex;justify-content:center;gap:7px;margin-bottom:14px;}
+  .tutdots i{width:9px;height:9px;border-radius:50%;background:var(--line);}
+  .tutdots i.on{background:var(--brand);width:24px;border-radius:5px;}
+  .tutemoji{font-size:64px;line-height:1.1;margin-bottom:10px;}
+  .tuttitle{font-size:25px;font-weight:900;margin-bottom:12px;line-height:1.2;}
+  .tuttext{font-size:19px;line-height:1.55;color:var(--text);white-space:pre-line;margin-bottom:22px;}
+  .tutbtns{display:grid;grid-template-columns:1fr 1.6fr;gap:10px;}
+  .tutbtns button{border:2px solid var(--line);background:transparent;color:var(--text);border-radius:18px;padding:17px 10px;font-size:18px;font-weight:800;cursor:pointer;font-family:inherit;}
+  .tutbtns button.main{background:var(--brand);border-color:var(--brand);color:#fff;}
+  .tutbtns button:disabled{opacity:.3;}
+  .tutskip{margin-top:12px;border:0;background:none;color:var(--muted);font-size:15px;font-weight:700;padding:8px;cursor:pointer;font-family:inherit;}
+  #fabAdd.pulse{animation:fabPulse 1.2s ease-in-out infinite;}
+  @keyframes fabPulse{50%{box-shadow:0 0 0 14px rgba(124,108,240,.35);}}
   .langrow{display:flex;gap:8px;margin-bottom:14px;}
   .langrow .chip{flex:1;text-align:center;padding:12px;}
   .flabel{display:block;font-size:12px;color:var(--muted);margin:0 0 5px 4px;}
@@ -370,7 +394,7 @@
     <div class="catgrid" id="catGrid"></div>
     <input class="field" id="note" type="text" data-tp="notePh" autocomplete="off">
     <div class="daterow"><span data-t="date">Date</span><input type="date" id="txDate"></div>
-    <div class="togglerow"><span data-t="chargeCard">Charge to credit card?</span><div class="sw on" id="cardSw"><i></i></div></div>
+    <div class="togglerow" id="cardToggle"><span data-t="chargeCard">Charge to credit card?</span><div class="sw on" id="cardSw"><i></i></div></div>
     <div class="chiprow" id="cardPickChips"></div>
     <div class="btnrow">
       <button class="bexp" id="btnExp"></button>
@@ -398,10 +422,15 @@
     <h3 data-t="settings">Settings</h3>
     <h4 data-t="language">Language</h4>
     <div class="langrow" id="langRowSettings"></div>
+    <button class="ghostbtn brand" id="tutBtn" data-t="tutorial" style="font-size:16px;padding:15px"></button>
+    <div class="togglerow" id="cashRow" style="margin-top:14px"><span data-t="cashOnlyS"></span><div class="sw" id="cashSw"><i></i></div></div>
+    <div class="mini" data-t="cashOnlyMini" style="margin-top:6px"></div>
+    <div class="cardonly">
     <h4 data-t="creditCards">Credit cards</h4>
     <div class="mini" data-t="cardsMini"></div>
     <div id="cardEditor"></div>
     <button class="ghostbtn brand" id="addCard" data-t="addCard">+ Add another card</button>
+    </div>
     <h4 data-t="fixedBills">Monthly fixed bills</h4>
     <div class="mini" data-t="billsMini"></div>
     <div id="billEditor"></div>
@@ -429,6 +458,9 @@
     <h3 data-t="welcome">Welcome</h3>
     <div class="mini" style="margin-top:-8px" data-t="welcomeSub"></div>
     <div class="langrow" id="langRowSetup"></div>
+    <label class="flabel" data-t="howPay">How do you pay?</label>
+    <div class="paychoice"><button id="suCash" data-t="payCash"></button><button id="suCard" data-t="payCard"></button></div>
+    <div id="suCardBox">
     <label class="flabel" data-t="cardName">Card name</label>
     <input class="field" id="suCardName" type="text" autocomplete="off">
     <div class="two">
@@ -436,6 +468,7 @@
         <input class="field num" id="suLimit" type="number" inputmode="decimal" placeholder="0"></div>
       <div><label class="flabel" data-t="resetDay">Resets on day</label>
         <input class="field num" id="suReset" type="number" inputmode="numeric" min="1" max="28" value="1"></div>
+    </div>
     </div>
     <label class="flabel" data-t="startMoney">Money you have right now (₪, optional)</label>
     <input class="field num" id="suStart" type="number" inputmode="decimal" placeholder="0">
@@ -447,6 +480,10 @@
   </div>
 </div>
 
+<div id="tutOv"><div class="tutcard"><div class="tutdots" id="tutDots"></div><div class="tutemoji" id="tutE"></div>
+  <div class="tuttitle" id="tutT"></div><div class="tuttext" id="tutX"></div>
+  <div class="tutbtns"><button id="tutPrev"></button><button id="tutNextB" class="main"></button></div>
+  <button id="tutSkipB" class="tutskip"></button></div></div>
 <input type="file" id="importFile" accept="application/json,.json">
 <div class="offbar hidden" id="offbar" data-t="offline"></div>
 <div id="okPop"><div>✓</div></div>
@@ -474,6 +511,19 @@ const T={
     confirmLoad:d=>`Replace everything here with your cloud save from ${d}?`,nothing:"Nothing saved in the cloud yet",
     restored:"Loaded from the cloud ✓",synced:"Updated from the cloud",outQ:"Sign out? Your data stays on this phone and in the cloud.",
     now:"just now",min:n=>n+" min ago",hr:n=>n+" h ago",day:n=>n+" d ago"},
+  ru:{title:"☁️ Облачная копия",off:"Облачная копия скоро заработает.",
+    intro:"Войдите, и данные будут сохраняться сами после каждого изменения. Новый телефон? Войдите снова — и всё вернётся.",
+    name:"Ваше имя",pass:"Пароль (минимум 6 символов)",go:"Войти / Создать аккаунт",
+    hint:"Новое имя создаёт новый аккаунт. Не забудьте пароль — его нельзя восстановить.",
+    signedAs:n=>`Вы вошли как <b>${n}</b>`,saved:a=>`✓ Сохранено в облаке ${a}`,saving:"Сохраняю…",never:"Ещё не сохранено",
+    err:e=>`⚠ Не удалось сохранить (${e}) — попробую снова`,offline:"Нет интернета — сохраню, когда он появится",
+    saveNow:"Сохранить сейчас",load:"Загрузить из облака",out:"Выйти",
+    working:"Вхожу…",badName:"Введите имя",shortPass:"Пароль должен быть не короче 6 символов",wrongPass:"Неверный пароль для этого имени",
+    tooMany:"Слишком много попыток — подождите минуту",net:"Нет подключения к интернету",created:"Аккаунт создан — сохраняю данные",welcome:"Вы вошли",
+    found:(d,x)=>`Найдена копия в облаке от ${d}${x?" ("+x+")":""}.\n\nЗагрузить её на этот телефон? Это заменит текущие данные.\n\nОтмена = оставить данные этого телефона и сохранить их в облако.`,
+    confirmLoad:d=>`Заменить всё копией из облака от ${d}?`,nothing:"В облаке пока ничего нет",
+    restored:"Загружено из облака ✓",synced:"Обновлено из облака",outQ:"Выйти? Данные останутся на телефоне и в облаке.",
+    now:"только что",min:n=>n+" мин назад",hr:n=>n+" ч назад",day:n=>n+" дн назад"},
   he:{title:"☁️ גיבוי בענן",off:"גיבוי בענן כמעט מוכן — יופעל בקרוב.",
     intro:"התחברו והנתונים יישמרו לבד בכל שינוי. טלפון חדש או איפוס? מתחברים שוב והכול חוזר.",
     name:"השם שלך",pass:"סיסמה (6 תווים לפחות)",go:"התחברות / יצירת חשבון",
@@ -489,7 +539,7 @@ const T={
     now:"עכשיו",min:n=>`לפני ${n} דק׳`,hr:n=>`לפני ${n} שע׳`,day:n=>`לפני ${n} ימים`}
 };
 let opt=null,initAt=0,timer=null,busy=false,status="",lastErr="",panels=[];
-const L=()=>T[(opt&&opt.lang&&opt.lang())==="he"?"he":"en"];
+const L=()=>{const l=opt&&opt.lang&&opt.lang();return T[l]||T.en;};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function sess(){try{return JSON.parse(localStorage.getItem(SESS)||"null");}catch(e){return null;}}
 function setSess(s){try{s?localStorage.setItem(SESS,JSON.stringify(s)):localStorage.removeItem(SESS);}catch(e){}}
@@ -739,7 +789,19 @@ en:{
   payments:"Payments",paidSoFar:"Paid",ongoing:"∞",paymentOf:(n,m)=>`payment ${n} of ${m}`,paidOf:(n,m)=>`${n} of ${m} paid`,
   installDone:"✓ All paid",installFinished:n=>`${n} is fully paid 🎉`,swipeEdit:"Edit",swipeDelete:"Delete",
   startBalance:"Starting balance",
-  csvHead:["Date","Time","Type","Category","Reason","Card","Amount (ILS)"],csvInc:"Income",csvExp:"Expense"
+  csvHead:["Date","Time","Type","Category","Reason","Card","Amount (ILS)"],csvInc:"Income",csvExp:"Expense",
+  howPay:"How do you pay?",payCash:"💵 Cash only",payCard:"💳 Credit card too",
+  cashOnlyS:"💵 Cash only (no credit card)",cashOnlyMini:"Turn on if you don't use a credit card — the app gets simpler.",
+  incomeIn:m=>`Received in ${m}`,incomeSub:"pension, salary and other income",
+  tutorial:"📖 How to use the app",tutNext:"Next →",tutBack:"← Back",tutDone:"Got it — start!",tutSkip:"Skip",
+  tut:[
+    ["👋","Hello!","This is your wallet. You write down what you spend and what you receive, so you can see where the money goes."],
+    ["➕","To write down a purchase","Press the big purple “+” button at the bottom of the screen."],
+    ["✍️","Type the amount and what it was","At the top, type the amount, for example 25.\nBelow, write what it was for, for example “bread”.\nThen press the red “Expense −” button."],
+    ["💰","Got money?","Pension or any money you receive: press “+”, type the amount and press the green “Income +” button."],
+    ["🏠","The main screen","The big number at the top is how much money you have left.\nBelow it are your latest entries."],
+    ["✏️","Made a mistake?","Tap any entry to fix it or delete it.\nYou can open this guide again in ⚙ Settings."]
+  ]
 },
 he:{
   appName:"הארנק",home:"בית",history:"היסטוריה",insights:"תובנות",settings:"הגדרות",back:"חזרה",backArrow:"→",
@@ -803,9 +865,99 @@ he:{
   payments:"תשלומים",paidSoFar:"שולמו",ongoing:"∞",paymentOf:(n,m)=>`תשלום ${n} מתוך ${m}`,paidOf:(n,m)=>`שולמו ${n} מתוך ${m}`,
   installDone:"✓ שולם במלואו",installFinished:n=>`${n} שולם במלואו 🎉`,swipeEdit:"עריכה",swipeDelete:"מחיקה",
   startBalance:"יתרת פתיחה",
-  csvHead:["תאריך","שעה","סוג","קטגוריה","סיבה","כרטיס","סכום (₪)"],csvInc:"הכנסה",csvExp:"הוצאה"
+  csvHead:["תאריך","שעה","סוג","קטגוריה","סיבה","כרטיס","סכום (₪)"],csvInc:"הכנסה",csvExp:"הוצאה",
+  howPay:"איך משלמים?",payCash:"💵 רק מזומן",payCard:"💳 גם כרטיס אשראי",
+  cashOnlyS:"💵 רק מזומן (בלי כרטיס אשראי)",cashOnlyMini:"הפעילו אם אין כרטיס אשראי — האפליקציה תהיה פשוטה יותר.",
+  incomeIn:m=>`התקבל ב${m}`,incomeSub:"פנסיה, משכורת והכנסות אחרות",
+  tutorial:"📖 איך משתמשים (הדרכה)",tutNext:"הבא ←",tutBack:"→ חזרה",tutDone:"הבנתי — מתחילים!",tutSkip:"דילוג",
+  tut:[
+    ["👋","שלום!","זה הארנק שלך. כותבים כאן כמה הוצאתם וכמה קיבלתם, וכך רואים לאן הכסף הולך."],
+    ["➕","כדי לרשום קנייה","לוחצים על הכפתור הסגול הגדול „+” בתחתית המסך."],
+    ["✍️","כותבים סכום ועל מה","למעלה כותבים את הסכום, למשל 25.\nלמטה כותבים על מה, למשל „לחם”.\nואז לוחצים על הכפתור האדום „הוצאה −”."],
+    ["💰","נכנס כסף?","פנסיה או כל כסף שמקבלים: לוחצים „+”, כותבים את הסכום ולוחצים על הכפתור הירוק „הכנסה +”."],
+    ["🏠","המסך הראשי","המספר הגדול למעלה הוא כמה כסף נשאר לך.\nמתחתיו — הרישומים האחרונים."],
+    ["✏️","טעיתם?","לוחצים על רישום כדי לתקן או למחוק אותו.\nאפשר לפתוח את ההדרכה שוב ב־⚙ הגדרות."]
+  ]
+},
+ru:{
+  appName:"Кошелёк",home:"Главная",history:"История",insights:"Анализ",settings:"Настройки",back:"Назад",backArrow:"←",
+  exportView:"Экспорт",clear:"Очистить поиск",addTx:"Добавить запись",
+  comingUp:"Скоро платежи",recent:"Последние",seeAll:"Все",
+  cats:{Food:"Еда",Transport:"Транспорт",Gaming:"Игры",Shopping:"Покупки",Bills:"Счета",Salary:"Доход",Health:"Здоровье",Other:"Другое"},
+  months:["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"],
+  mon:["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"],
+  wd:["Вс","Пн","Вт","Ср","Чт","Пт","Сб"],
+  today:"Сегодня",yesterday:"Вчера",tomorrow:"Завтра",
+  dayLabel:(wd,d,mon,y)=>`${wd}, ${d} ${mon}${y?" "+y:""}`,
+  shortDate:(d,mon)=>`${d} ${mon}`,
+  onTrack:"✓ Всё хорошо",fast:"⚠ Тратите быстро",over:"⛔ Лимит превышен",noLimit:"Без лимита",
+  leftOf:x=>`осталось из ${x} в этом периоде`,overOf:x=>`сверх лимита ${x}`,spentCycle:"потрачено в этом периоде",
+  resets:d=>`обнуляется ${d}`,perDay:(x,n,r)=>`${x} в день, ${n} ${ruP(n,"день","дня","дней")} · ${r}`,limitReset:(x,r)=>`Лимит ${x} · ${r}`,
+  balance:"Сколько у вас денег",balanceSub:"Все доходы минус все расходы, которые вы записали",
+  oweNow:"Долг по карте",acrossCards:n=>`по ${n} ${ruP(n,"карте","картам","картам")} в этом периоде`,
+  spentIn:m=>`Потрачено: ${m}`,samePoint:"в это же время в прошлом месяце",
+  newThisMonth:"Новое в этом месяце",sameAs:x=>`Как в ${x}`,vs:x=>`чем в ${x}`,
+  nextDays:x=>`${x} в ближайшие 30 дней`,cash:"Наличные",auto:"Авто",
+  emptyHome:"Пока ничего не записано. Нажмите большую кнопку + внизу, чтобы записать первый расход.",
+  searchPh:"Поиск по описанию, категории, сумме",allCards:"Все",allTime:"За всё время",
+  results:(n,q)=>`${n} ${ruP(n,"результат","результата","результатов")} для «${q}»`,spent:"Потрачено",received:"Получено",
+  noResults:q=>`Ничего не найдено для «${q}».`,noTx:"Здесь пока нет записей.",nothingExport:"Нечего экспортировать",
+  spentMon:m=>`Потрачено (${m})`,spentAll:"Потрачено (всё время)",nExpenses:n=>`${n} ${ruP(n,"расход","расхода","расходов")}`,
+  avgMonth:"В среднем за месяц",avgDay:"В среднем за день",biggest:"Самый большой расход",nothingYet:"Пока ничего нет",
+  last6:c=>`Последние 6 месяцев · ${c}`,tapMonth:"Нажмите на месяц, чтобы открыть его",noExpPeriod:c=>`Нет расходов (${c}) за этот период.`,
+  totalSpent:"всего потрачено",newVs:m=>`Новое по сравнению с ${m}`,tapCat:"Нажмите на категорию, чтобы увидеть, на что ушли деньги",
+  detailSum:(p,x,n)=>`${p} · ${x} · ${n} ${ruP(n,"расход","расхода","расходов")}`,nothingLeft:"Здесь больше ничего нет.",tapToEdit:"Нажмите на строку, чтобы исправить",
+  addTitle:"Новая запись",editTitle:"Исправить запись",notePh:"На что? (например: хлеб, лекарства)",date:"Дата",
+  chargeCard:"Оплата кредитной картой?",expenseBtn:"Расход −",incomeBtn:"Доход +",saveExp:"Сохранить как расход",saveInc:"Сохранить как доход",
+  deleteTx:"Удалить эту запись",leftChip:(c,x)=>`💳 ${c} · осталось ${x}`,
+  needAmount:"Сначала введите сумму",needReason:"Напишите, на что потратили",saved:"Изменения сохранены",gone:"Эта запись уже удалена",
+  addedOn:(x,c,r)=>`− ${x} · ${c} · ${r}`,leftShort:x=>`осталось ${x}`,overShort:x=>`сверх лимита ${x}`,
+  incAdded:x=>`+ Доход ${x} записан`,expAdded:x=>`− Расход ${x} записан`,
+  deleted:(w,x)=>`Удалено: ${w} · ${x}`,undo:"Отменить",restored:"Восстановлено",
+  billsAdded:(n,x)=>`Добавлено ${n} ${ruP(n,"платёж","платежа","платежей")} · ${x}`,cantSave:"Не удалось сохранить — память заполнена",
+  language:"Язык",creditCards:"Кредитные карты",cardsMini:"У каждой карты свой лимит, день обнуления и расходы.",
+  name:"Название",limit:"Лимит (₪)",resetDay:"День обнуления",addCard:"+ Добавить карту",newCard:"Новая карта",
+  fixedBills:"Постоянные платежи каждый месяц",billsMini:"Каждый платёж добавляется как расход в свой день. Один платёж — только один раз в месяц.",
+  noBills:"Постоянных платежей пока нет.",billTag:(x,d,c)=>`${x} каждый месяц ${d}-го числа · ${c}`,
+  addBill:"+ Добавить платёж",newBill:"Новый платёж",applyBills:"Добавить все платежи сейчас",
+  backupExport:"Резервная копия и экспорт",exportCsv:"↓ Экспорт в таблицу (CSV)",exportBackup:"↓ Сохранить резервную копию",importBackup:"↑ Загрузить резервную копию",
+  dangerZone:"Опасная зона",resetAll:"Удалить всё",done:"Готово",
+  keepOne:"Должна остаться хотя бы одна карта",delCard:c=>`Удалить ${c}? Прошлые записи останутся в истории как наличные.`,
+  removed:w=>`Удалено: ${w}`,allApplied:"Все платежи в этом месяце уже добавлены",
+  confirmApply:(n,x)=>`Добавить ${n} ${ruP(n,"платёж","платежа","платежей")} за этот месяц (${x})?`,appliedN:(n,x)=>`Добавлено ${n} · ${x}`,
+  exported:n=>`Экспортировано записей: ${n}`,nothingYetExport:"Пока нечего экспортировать",backupSaved:"Копия сохранена",
+  confirmImport:n=>`Заменить все данные этой копией (${n} записей)?`,badBackup:"Этот файл не является копией кошелька",
+  backupRestored:"Копия восстановлена",confirmReset:"Удалить ВСЕ данные и начать заново?",
+  resetDone:"Всё удалено",offline:"Нет интернета · всё равно сохраняется",
+  welcome:"Добро пожаловать",welcomeSub:"Несколько простых вопросов. Всё можно изменить потом в Настройках.",
+  cardName:"Название карты",defaultCard:"Карта 1",monthlyLimit:"Лимит в месяц (₪)",startMoney:"Сколько денег у вас сейчас? (₪, можно пропустить)",
+  start:"Начать",restoreBackup:"Восстановить из файла",privacy:"Данные хранятся на этом телефоне — и в вашей личной копии в облаке, если вы войдёте.",cloudH:"☁️ Облачная копия",cloudRestore:"☁️ Войти и вернуть мои данные",
+  quickAdd:"Быстро добавить",budgets:"Бюджеты на месяц",budgetsSet:"Бюджет по категориям",
+  budgetsMini:"Лимит на месяц для каждой категории. Оставьте пустым, если лимит не нужен.",
+  budgetOf:(x,y)=>`${x} из ${y}`,budgetLeft:x=>`осталось ${x}`,budgetOver:x=>`сверх на ${x}`,
+  budgetWarn:(c,x,y)=>`${c}: ${x} из ${y} в этом месяце`,budgetOverT:(c,x)=>`Бюджет «${c}» превышен на ${x}`,
+  forecast:"Прогноз на период",forecastD:d=>`при таком темпе к ${d}`,forecastOver:x=>`${x} сверх лимита`,
+  forecastUnder:x=>`${x} ниже лимита`,forecastEarly:"Нужно ещё несколько дней записей",
+  payments:"Платежей",paidSoFar:"Оплачено",ongoing:"∞",paymentOf:(n,m)=>`платёж ${n} из ${m}`,paidOf:(n,m)=>`оплачено ${n} из ${m}`,
+  installDone:"✓ Всё оплачено",installFinished:n=>`${n} полностью оплачено 🎉`,swipeEdit:"Исправить",swipeDelete:"Удалить",
+  startBalance:"Начальная сумма",
+  csvHead:["Дата","Время","Тип","Категория","Описание","Карта","Сумма (₪)"],csvInc:"Доход",csvExp:"Расход",
+  howPay:"Как вы платите?",payCash:"💵 Только наличные",payCard:"💳 Есть кредитная карта",
+  cashOnlyS:"💵 Только наличные (без кредитной карты)",cashOnlyMini:"Включите, если у вас нет кредитной карты — приложение станет проще.",
+  incomeIn:m=>`Получено: ${m}`,incomeSub:"пенсия, зарплата и другие доходы",
+  tutorial:"📖 Как пользоваться (обучение)",tutNext:"Дальше →",tutBack:"← Назад",tutDone:"Понятно, начать!",tutSkip:"Пропустить",
+  tut:[
+    ["👋","Здравствуйте!","Это ваш кошелёк. Здесь вы записываете, сколько потратили и сколько получили. Так видно, куда уходят деньги."],
+    ["➕","Как записать покупку","Нажмите большую фиолетовую кнопку «+» внизу экрана."],
+    ["✍️","Напишите сумму и на что","Сверху введите сумму, например 25.\nНиже напишите, на что потратили, например «хлеб».\nПотом нажмите красную кнопку «Расход −»."],
+    ["💰","Пришли деньги?","Пенсия или другие деньги: нажмите «+», введите сумму и нажмите зелёную кнопку «Доход +»."],
+    ["🏠","Главный экран","Большое число сверху — сколько у вас денег осталось.\nНиже — последние записи."],
+    ["✏️","Ошиблись?","Нажмите на запись, чтобы исправить её или удалить.\nЭто обучение можно открыть снова в ⚙ Настройках."]
+  ]
 }};
-function lang(){return state&&state.lang==="he"?"he":"en";}
+const LANGS=[["en","English"],["he","עברית"],["ru","Русский"]];
+function lang(){return state&&L[state.lang]?state.lang:"en";}
+function ruP(n,one,few,many){const a=Math.abs(n)%100,b=a%10;if(a>10&&a<20)return many;if(b>1&&b<5)return few;if(b===1)return one;return many;}
 function t(k,...a){const d=L[lang()],v=k in d?d[k]:L.en[k];return typeof v==="function"?v(...a):v;}
 function catName(k){return t("cats")[k]||k;}
 
@@ -818,7 +970,7 @@ const CARD_GRADIENTS=["linear-gradient(135deg,#3a2fb0,#7c6cf0)","linear-gradient
 function id(){return Math.random().toString(36).slice(2)+Date.now().toString(36);}
 
 /* ---------- storage ---------- */
-function guessLang(){return /^he|^iw/i.test(navigator.language||"")?"he":"en";}
+function guessLang(){const l=navigator.language||"";return /^he|^iw/i.test(l)?"he":/^ru|^uk|^be/i.test(l)?"ru":"en";}
 function seed(){
   const c1=id(),lg=guessLang();
   return {cards:[{id:c1,name:L[lg].defaultCard,limit:0,resetDay:1}],fixedBills:[],billRuns:{},tx:[],activeCard:c1,lang:lg,setup:false};
@@ -848,7 +1000,8 @@ function normalize(s){
   if(!s.budgets||typeof s.budgets!=="object")s.budgets={};
   s.fixedBills.forEach(b=>{b.payments=Math.max(0,parseInt(b.payments)||0);b.paid=Math.max(0,parseInt(b.paid)||0);});
   if(s.setup===undefined)s.setup=true;        // data from earlier versions = already set up
-  if(s.lang!=="he"&&s.lang!=="en")s.lang="en";
+  if(!L[s.lang])s.lang="en";
+  s.cashOnly=!!s.cashOnly;
   return s;
 }
 let state=null;
@@ -933,7 +1086,7 @@ function autoApplyBills(){
     if(now.getDate()>=b.day && state.billRuns[b.id]!==mk){
       const due=new Date(now.getFullYear(),now.getMonth(),b.day,12,0,0).getTime();
       state.tx.push({id:id(),cat:b.cat,amount:+b.amount||0,type:"expense",note:b.note||b.name,
-        cardId:cardById(b.cardId)?b.cardId:null,auto:true,ts:Math.min(due,Date.now())});
+        cardId:!state.cashOnly&&cardById(b.cardId)?b.cardId:null,auto:true,ts:Math.min(due,Date.now())});
       state.billRuns[b.id]=mk;applied.push(b);countPayment(b,finished);
     }
   });
@@ -966,7 +1119,7 @@ function applyStatic(){
 function renderLangRows(){
   ["langRowSettings","langRowSetup"].forEach(rid=>{
     const w=$(rid);w.innerHTML="";
-    [["en","English"],["he","עברית"]].forEach(([code,label])=>{
+    LANGS.forEach(([code,label])=>{
       w.appendChild(mkChip(label,lang()===code,()=>setLang(code)));
     });
   });
@@ -1076,6 +1229,7 @@ function renderHero(){
   let inc=0,exp=0;state.tx.forEach(x=>{if(x.type==="income")inc+=x.amount;else exp+=x.amount;});
   const bal=inc-exp;
   const owed=state.cards.reduce((a,c)=>a+cardSpent(c.id),0);
+  const incM=state.tx.reduce((a,x)=>a+(x.type==="income"&&calMonthKey(x.ts)===calMonthKey(Date.now())?x.amount:0),0);
   const mk=calMonthKey(Date.now()),pmk=shiftMonth(mk,-1),dom=new Date().getDate();
   let thisM=0,lastSame=0;
   state.tx.forEach(x=>{
@@ -1088,10 +1242,11 @@ function renderHero(){
     <div class="hval num" id="heroBal" style="color:${bal<0?"var(--exp)":"var(--text)"}"></div>
     <div class="hsub">${t("balanceSub")}</div>
     <div class="hbreak">
-      <div><div class="k">${t("oweNow")}</div><div class="v num" id="heroOwed"></div><div class="d">${t("acrossCards",state.cards.length)}</div></div>
+      ${state.cashOnly?`<div><div class="k">${t("incomeIn",monthLong(mk))}</div><div class="v num" id="heroOwed" style="color:var(--inc)"></div><div class="d">${t("incomeSub")}</div></div>`
+        :`<div><div class="k">${t("oweNow")}</div><div class="v num" id="heroOwed"></div><div class="d">${t("acrossCards",state.cards.length)}</div></div>`}
       <div><div class="k">${t("spentIn",monthLong(mk))}</div><div class="v num" id="heroMonth"></div><div class="d">${deltaHtml(thisM,lastSame,t("samePoint"))}</div></div>
     </div>`;
-  rollTo($("heroBal"),"bal",bal,money);rollTo($("heroOwed"),"owed",owed,cur);rollTo($("heroMonth"),"month",thisM,cur);
+  rollTo($("heroBal"),"bal",bal,money);rollTo($("heroOwed"),state.cashOnly?"incm":"owed",state.cashOnly?incM:owed,cur);rollTo($("heroMonth"),"month",thisM,cur);
 }
 function renderUpcoming(){
   const list=upcomingBills();const sec=$("upcomingSec");
@@ -1105,7 +1260,7 @@ function renderUpcoming(){
     const card=cardById(b.cardId);
     const r=document.createElement("div");r.className="billup";
     r.innerHTML=`<div class="when ${days<=3?"soon":""}">${days===0?t("today"):days===1?t("tomorrow"):shortDate(due)}</div>
-      <div class="bn">${emojiFor(b.cat)} ${escapeHtml(b.name)}<small>${card?escapeHtml(cardName(card)):t("cash")}${b.payments>0?" · "+t("paymentOf",b.paid+1,b.payments):""}</small></div>
+      <div class="bn">${emojiFor(b.cat)} ${escapeHtml(b.name)}<small>${card&&!state.cashOnly?escapeHtml(cardName(card)):t("cash")}${b.payments>0?" · "+t("paymentOf",b.paid+1,b.payments):""}</small></div>
       <div class="ba num">${cur(+b.amount||0)}</div>`;
     L2.appendChild(r);
   });
@@ -1277,24 +1432,28 @@ $("histSearchClear").onclick=()=>{histQuery="";$("histSearch").value="";$("histS
 $("histExport").onclick=()=>{const list=historyList();if(!list.length){toast(t("nothingExport"));return;}exportCSV(list,"history");};
 
 /* ---------- INSIGHTS ---------- */
-let insMonth=calMonthKey(Date.now()),animIns=false;
+let insMonth=calMonthKey(Date.now()),animIns=false,insSel=null;
+function insCid(){return insSel==="cash"?null:insSel;}
+function insLabel(){return insSel==="cash"?t("cash"):cardName(cardById(insSel));}
 function cardMonthTotal(cid,mk){return state.tx.reduce((a,x)=>a+(x.type==="expense"&&x.cardId===cid&&calMonthKey(x.ts)===mk?x.amount:0),0);}
 function renderInsights(){
-  if(!state.cards.find(c=>c.id===viewCard))viewCard=state.cards[0].id;
+  if(state.cashOnly)insSel="cash";
+  if(insSel!=="cash"&&!state.cards.find(c=>c.id===insSel))insSel=state.cards.find(c=>c.id===viewCard)?viewCard:state.cards[0].id;
   const cw=$("insCardChips");cw.innerHTML="";
-  state.cards.forEach(c=>cw.appendChild(mkChip(cardName(c),viewCard===c.id,()=>{viewCard=c.id;animIns=true;renderInsights();})));
+  state.cards.forEach(c=>cw.appendChild(mkChip(cardName(c),insSel===c.id,()=>{insSel=c.id;animIns=true;renderInsights();})));
+  cw.appendChild(mkChip("💵 "+t("cash"),insSel==="cash",()=>{insSel="cash";animIns=true;renderInsights();}));
   const mw=$("insMonthChips");mw.innerHTML="";
   mw.appendChild(mkChip(t("allTime"),insMonth==="all",()=>{insMonth="all";animIns=true;renderInsights();}));
   availableMonths().forEach(mk=>mw.appendChild(mkChip(calMonthLabel(mk),insMonth===mk,()=>{insMonth=mk;animIns=true;renderInsights();})));
 
   const body=$("insBody");body.innerHTML="";
   body.classList.remove("anim");if(animIns){void body.offsetWidth;body.classList.add("anim");}animIns=false;
-  const card=cardById(viewCard);
-  const allExp=state.tx.filter(x=>x.type==="expense"&&x.cardId===viewCard);
+  const card=insSel==="cash"?null:cardById(insSel);
+  const allExp=state.tx.filter(x=>x.type==="expense"&&x.cardId===insCid());
   const scoped=insMonth==="all"?allExp:allExp.filter(x=>calMonthKey(x.ts)===insMonth);
   const total=scoped.reduce((a,x)=>a+x.amount,0);
   const pmk=insMonth==="all"?null:shiftMonth(insMonth,-1);
-  const prevTotal=pmk?cardMonthTotal(viewCard,pmk):0;
+  const prevTotal=pmk?cardMonthTotal(insCid(),pmk):0;
 
   const biggest=scoped.reduce((m,x)=>!m||x.amount>m.amount?x:m,null);
   let avgK,avgV;
@@ -1331,10 +1490,10 @@ function renderInsights(){
 
   const endMk=insMonth==="all"?calMonthKey(Date.now()):insMonth;
   const months=[];for(let i=5;i>=0;i--)months.push(shiftMonth(endMk,-i));
-  const vals=months.map(mk=>cardMonthTotal(viewCard,mk));
+  const vals=months.map(mk=>cardMonthTotal(insCid(),mk));
   const max=Math.max(...vals,1);
   const panel=document.createElement("div");panel.className="panel";panel.style.setProperty("--i",3);
-  panel.innerHTML=`<h4>${escapeHtml(t("last6",cardName(card)))}</h4><div class="ph">${t("tapMonth")}</div><div class="trend" dir="ltr"></div>`;
+  panel.innerHTML=`<h4>${escapeHtml(t("last6",insLabel()))}</h4><div class="ph">${t("tapMonth")}</div><div class="trend" dir="ltr"></div>`;
   const tr=panel.querySelector(".trend");
   months.forEach((mk,i)=>{
     const col=document.createElement("div");
@@ -1352,7 +1511,7 @@ function renderInsights(){
   body.appendChild(panel);
 
   if(!scoped.length){
-    const e=document.createElement("div");e.className="empty";e.textContent=t("noExpPeriod",cardName(card));
+    const e=document.createElement("div");e.className="empty";e.textContent=t("noExpPeriod",insLabel());
     body.appendChild(e);return;
   }
   const by={};scoped.forEach(x=>{by[x.cat]=(by[x.cat]||0)+x.amount;});
@@ -1395,11 +1554,11 @@ function renderInsights(){
 let detailCat=null;
 function renderDetail(){
   if(!detailCat)return;
-  const card=cardById(viewCard);
-  let list=state.tx.filter(x=>x.type==="expense"&&x.cardId===viewCard&&x.cat===detailCat);
+  const card=insSel==="cash"?null:cardById(insSel);
+  let list=state.tx.filter(x=>x.type==="expense"&&x.cardId===insCid()&&x.cat===detailCat);
   if(insMonth!=="all")list=list.filter(x=>calMonthKey(x.ts)===insMonth);
   list.sort((a,b)=>b.ts-a.ts);
-  $("detailTitle").textContent=emojiFor(detailCat)+" "+catName(detailCat)+" · "+cardName(card);
+  $("detailTitle").textContent=emojiFor(detailCat)+" "+catName(detailCat)+" · "+insLabel();
   $("detailSum").textContent=t("detailSum",insMonth==="all"?t("allTime"):calMonthLabel(insMonth),cur(list.reduce((a,x)=>a+x.amount,0)),list.length);
   const w=$("detailList");w.innerHTML="";
   if(!list.length){w.innerHTML=`<div class="empty">${t("nothingLeft")}</div>`;return;}
@@ -1538,7 +1697,7 @@ function openAdd(x){
   const d=dayKey(x?x.ts:Date.now());
   editOrigDate=x?d:null;
   $("txDate").value=d;$("txDate").max=dayKey(Date.now());
-  setCardOn(x?(x.type==="expense"?!!x.cardId:true):true);
+  setCardOn(state.cashOnly?false:(x?(x.type==="expense"?!!x.cardId:true):true));
   $("btnExp").textContent=x?t("saveExp"):t("expenseBtn");
   $("btnInc").textContent=x?t("saveInc"):t("incomeBtn");
   $("editDelete").classList.toggle("hidden",!x);
@@ -1645,7 +1804,7 @@ function renderBillEditor(){
       <div class="tag"></div>`;
     const [nameI,amtI,dayI,payI,paidI]=row.querySelectorAll("input");
     const catSel=row.querySelector(".catsel"),cardSel=row.querySelector(".cardsel"),tag=row.querySelector(".tag");
-    const refreshTag=()=>{tag.textContent=t("billTag",cur(+b.amount||0),b.day||1,cardName(cardById(b.cardId)))+
+    const refreshTag=()=>{tag.textContent=t("billTag",cur(+b.amount||0),b.day||1,!state.cashOnly&&cardById(b.cardId)?cardName(cardById(b.cardId)):t("cash"))+
       (b.payments>0?" · "+(billDone(b)?t("installDone"):t("paidOf",b.paid,b.payments)):"");};
     payI.onchange=()=>{b.payments=Math.max(0,parseInt(payI.value)||0);if(!b.payments){b.paid=0;paidI.value="";}save();refreshTag();};
     paidI.onchange=()=>{b.paid=Math.max(0,parseInt(paidI.value)||0);if(b.payments)b.paid=Math.min(b.paid,b.payments);paidI.value=b.payments?b.paid:"";save();refreshTag();};
@@ -1662,7 +1821,7 @@ function renderBillEditor(){
     w.appendChild(row);
   });
 }
-$("addBill").onclick=()=>{state.fixedBills.push({id:id(),name:t("newBill"),cat:"Other",amount:0,note:"",day:1,cardId:state.cards[0].id});save();renderBillEditor();};
+$("addBill").onclick=()=>{state.fixedBills.push({id:id(),name:t("newBill"),cat:"Other",amount:0,note:"",day:1,cardId:state.cashOnly?null:state.cards[0].id});save();renderBillEditor();};
 $("loadFixed").onclick=()=>{
   const due=state.fixedBills.filter(b=>(+b.amount||0)>0&&!billDone(b)&&state.billRuns[b.id]!==billMonthKey(new Date()));
   if(!due.length){toast(t("allApplied"));return;}
@@ -1670,7 +1829,7 @@ $("loadFixed").onclick=()=>{
   if(!confirm(t("confirmApply",due.length,"₪"+fmt(sum))))return;
   const now=Date.now(),mk=billMonthKey(new Date());
   due.forEach(b=>{
-    state.tx.push({id:id(),cat:b.cat,amount:+b.amount||0,type:"expense",note:b.note||b.name,cardId:cardById(b.cardId)?b.cardId:null,auto:false,ts:now});
+    state.tx.push({id:id(),cat:b.cat,amount:+b.amount||0,type:"expense",note:b.note||b.name,cardId:!state.cashOnly&&cardById(b.cardId)?b.cardId:null,auto:false,ts:now});
     state.billRuns[b.id]=mk;countPayment(b,[]);
   });
   save();renderEverything();toast(t("appliedN",due.length,cur(sum)));
@@ -1709,7 +1868,7 @@ $("importFile").onchange=function(){
       const keepLang=state.lang;
       s.setup=true;if(!s.lang)s.lang=keepLang;
       save(s);viewCard=state.cards[0].id;
-      closeSheetEl($("setupSheet"));applyStatic();renderEverything();autoApplyBills();
+      closeSheetEl($("setupSheet"));applyStatic();applyCashMode();renderEverything();autoApplyBills();
       if(modal.classList.contains("on"))openSettings();
       toast(t("backupRestored"));
     }catch(e){toast(t("badBackup"));}
@@ -1724,8 +1883,12 @@ $("resetBtn").onclick=()=>{
 };
 
 /* ---------- first-run setup ---------- */
+let suCash=false;
+function setSuPay(cash){suCash=cash;$("suCash").classList.toggle("on",cash);$("suCard").classList.toggle("on",!cash);$("suCardBox").style.display=cash?"none":"";}
+$("suCash").onclick=()=>setSuPay(true);$("suCard").onclick=()=>setSuPay(false);
 function showSetupIfNeeded(){
   if(state.setup)return;
+  setSuPay(state.lang==="ru"||suCash);
   const c=state.cards[0];
   $("suCardName").value=c.name;$("suLimit").value=c.limit||"";$("suReset").value=c.resetDay||1;$("suStart").value="";
   openSheetEl($("setupSheet"));
@@ -1739,8 +1902,31 @@ $("suStartBtn").onclick=()=>{
   if(isFinite(startAmt)&&startAmt!==0){
     state.tx.push({id:id(),cat:"Salary",amount:Math.abs(startAmt),type:startAmt>0?"income":"expense",note:t("startBalance"),cardId:null,auto:false,ts:Date.now()});
   }
-  state.setup=true;save();closeSheetEl($("setupSheet"));renderEverything();
+  state.cashOnly=suCash;
+  state.setup=true;save();applyCashMode();closeSheetEl($("setupSheet"));renderEverything();
+  setTimeout(openTutorial,450);
 };
+/* ---------- cash-only mode ---------- */
+function applyCashMode(){document.body.classList.toggle("cashonly",!!state.cashOnly);$("cashSw").classList.toggle("on",!!state.cashOnly);}
+$("cashSw").onclick=()=>{state.cashOnly=!state.cashOnly;save();applyCashMode();renderEverything();};
+/* ---------- simple tutorial ---------- */
+let tutI=0;
+function renderTut(){
+  const steps=t("tut"),st=steps[tutI];
+  $("tutE").textContent=st[0];$("tutT").textContent=st[1];$("tutX").textContent=st[2];
+  $("tutDots").innerHTML=steps.map((_,i)=>`<i class="${i===tutI?"on":""}"></i>`).join("");
+  $("tutPrev").textContent=t("tutBack");$("tutPrev").disabled=tutI===0;
+  $("tutNextB").textContent=tutI===steps.length-1?t("tutDone"):t("tutNext");
+  $("tutSkipB").textContent=t("tutSkip");$("tutSkipB").style.visibility=tutI===steps.length-1?"hidden":"visible";
+  $("fabAdd").classList.toggle("pulse",tutI===1);
+  const c=document.querySelector(".tutcard");c.classList.remove("swap");void c.offsetWidth;c.classList.add("swap");
+}
+function openTutorial(){tutI=0;renderTut();$("tutOv").classList.add("on");}
+function closeTutorial(){$("tutOv").classList.remove("on");$("fabAdd").classList.remove("pulse");}
+$("tutNextB").onclick=()=>{if(tutI>=t("tut").length-1){closeTutorial();return;}tutI++;renderTut();};
+$("tutPrev").onclick=()=>{if(tutI>0){tutI--;renderTut();}};
+$("tutSkipB").onclick=closeTutorial;
+$("tutBtn").onclick=()=>{closeSettings();setTimeout(openTutorial,350);};
 $("suRestore").onclick=startImport;
 
 function okPop(){if(REDUCED)return;const o=$("okPop");o.classList.remove("on");void o.offsetWidth;o.classList.add("on");}
@@ -1781,6 +1967,7 @@ if("serviceWorker" in navigator&&location.hostname!=="appassets.androidplatform.
 /* ---------- boot ---------- */
 viewCard=state.cards[0].id;
 applyStatic();
+applyCashMode();
 renderHome();
 showSetupIfNeeded();
 autoApplyBills();
