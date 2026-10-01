@@ -1932,7 +1932,7 @@ attachDrag($("liveSheet"),()=>closeSheet($("liveSheet")));
 $("gear2").onclick=()=>openSettings();
 
 /* ---------- ASK AI (Google Gemini, with Google Search for fresh info) ---------- */
-const AI_MODELS=["gemini-flash-latest","gemini-2.5-flash","gemini-2.0-flash"];
+const AI_MODELS=["gemini-2.5-flash","gemini-flash-latest","gemini-2.5-flash-lite","gemini-2.0-flash","gemini-flash-lite-latest"];
 let aiMsgs=[],aiBusy=false,aiModelI=0;
 try{aiMsgs=JSON.parse(localStorage.getItem("animelist_ai_chat")||"[]");if(!Array.isArray(aiMsgs))aiMsgs=[];}catch(e){aiMsgs=[];}
 function aiSaveChat(){try{localStorage.setItem("animelist_ai_chat",JSON.stringify(aiMsgs.slice(-40)));}catch(e){}}
@@ -1979,7 +1979,9 @@ async function aiCall(){
   const key=aiKey();
   const contents=aiMsgs.slice(-20).map(m=>({role:m.role==="user"?"user":"model",parts:[{text:m.role==="user"?m.text:(m.raw||m.text)}]}));
   const body={systemInstruction:{parts:[{text:aiSystem()}]},contents,tools:[{google_search:{}}],generationConfig:{temperature:0.85,maxOutputTokens:2048}};
-  for(let tries=0;tries<AI_MODELS.length;tries++){
+  let lastErr=null;
+  for(let tries=0;tries<AI_MODELS.length*2+2;tries++){
+    if(aiModelI>=AI_MODELS.length)break;
     const model=AI_MODELS[aiModelI];
     const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
       {method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":key},body:JSON.stringify(body)});
@@ -1991,11 +1993,15 @@ async function aiCall(){
       return text;
     }
     const msg=(j.error&&j.error.message)||("HTTP "+r.status);
-    if(r.status===404&&aiModelI<AI_MODELS.length-1){aiModelI++;continue;}
-    if(r.status===400&&/google_search|tool/i.test(msg)&&body.tools){delete body.tools;tries--;continue;}
-    const e=new Error(msg);e.status=r.status;throw e;
+    const e=new Error(msg);e.status=r.status;lastErr=e;
+    // search tool not allowed / no quota for it: try again without web search
+    if((r.status===429||r.status===400||r.status===403)&&body.tools&&!/API key|API_KEY|permission/i.test(msg)){delete body.tools;continue;}
+    // this model has no free quota or doesn't exist: try the next one
+    if(r.status===404||r.status===429){aiModelI++;body.tools=[{google_search:{}}];continue;}
+    throw e;
   }
-  throw new Error("No model available");
+  aiModelI=0;
+  throw lastErr||new Error("No model available");
 }
 function aiFormat(text){
   let h=escapeHtml(text);
@@ -2087,7 +2093,8 @@ async function aiSend(text){
     aiBusy=false;aiMsgs.pop();
     let msg="The AI didn't answer — try again in a moment.";
     if(e.status===400||e.status===403||/API key/i.test(e.message))msg="Your AI key isn't working. Tap ⚙ next to the title to paste a new one.";
-    else if(e.status===429)msg="The free AI limit is used up for now — try again in a minute (or tomorrow if it keeps happening).";
+    else if(e.status===429)msg="Google says the free limit is used up: "+String(e.message).split(/[.\n]/)[0].slice(0,140);
+    else if(e.message)msg="AI error: "+String(e.message).slice(0,160);
     toast(msg);$("aiIn").value=text;renderAI();
   }
 }
