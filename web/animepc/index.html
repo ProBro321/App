@@ -476,6 +476,22 @@ try{if(!/[?&]stay/.test(location.search)&&Math.min(screen.width,screen.height)<=
     .airec .art{font-size:14.5px;}
     .aisug{font-size:15px;padding:12px 16px;}
   }
+
+  /* PC: use the whole screen, scale up on big monitors */
+  @media (min-width:980px){
+    .app{max-width:none;padding:0 clamp(28px,3vw,72px) 48px;}
+    #list{grid-template-columns:repeat(auto-fill,minmax(440px,1fr));}
+    #view-ai{max-width:min(1400px,100%);margin:0 auto;}
+    #aiBar{left:140px;right:0;}
+    #aiBar .in{max-width:1400px;margin:0 auto;padding:0 clamp(28px,3vw,72px);}
+    #topList,#topSuggest,#statsBody{margin-left:auto;margin-right:auto;}
+    .newbanner{max-width:900px;}
+  }
+  @media (min-width:1500px){#list{grid-template-columns:repeat(auto-fill,minmax(460px,1fr));}}
+  @media (min-width:1900px){body{zoom:1.12;}}
+  @media (min-width:2300px){body{zoom:1.28;}}
+  @media (min-width:2800px){body{zoom:1.5;}}
+  @media (min-width:3400px){body{zoom:1.8;}}
 </style>
 </head>
 <body>
