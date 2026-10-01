@@ -1848,9 +1848,10 @@ async function aiCall(){
     const msg=(j.error&&j.error.message)||("HTTP "+r.status);
     const e=new Error(msg);e.status=r.status;lastErr=e;
     // search tool not allowed / no quota for it: try again without web search
-    if((r.status===429||r.status===400||r.status===403)&&body.tools&&!/API key|API_KEY|permission/i.test(msg)){delete body.tools;continue;}
+    if((r.status===429||r.status===400||r.status===403)&&body.tools&&!/API key|API_KEY|permission|demand|overloaded/i.test(msg)){delete body.tools;continue;}
     // this model has no free quota or doesn't exist: try the next one
-    if(r.status===404||r.status===429){aiModelI++;body.tools=[{google_search:{}}];continue;}
+    // busy (503/500) or no quota / not found: move on to the next model
+    if(r.status===404||r.status===429||r.status>=500){aiModelI++;body.tools=[{google_search:{}}];if(r.status>=500)await new Promise(z=>setTimeout(z,700));continue;}
     throw e;
   }
   aiModelI=0;
@@ -1947,6 +1948,7 @@ async function aiSend(text){
     let msg="The AI didn't answer — try again in a moment.";
     if(e.status===400||e.status===403||/API key/i.test(e.message))msg="Your AI key isn't working. Tap ⚙ next to the title to paste a new one.";
     else if(e.status===429)msg="Google says the free limit is used up: "+String(e.message).split(/[.\n]/)[0].slice(0,140);
+    else if(e.status>=500)msg="Google's AI is overloaded right now (all free models are busy) — try again in a minute.";
     else if(e.message)msg="AI error: "+String(e.message).slice(0,160);
     toast(msg);$("aiIn").value=text;renderAI();
   }
