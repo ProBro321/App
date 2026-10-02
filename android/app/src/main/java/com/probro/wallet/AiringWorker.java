@@ -136,13 +136,18 @@ public class AiringWorker extends Worker {
                 if (last < 0) { ed.putInt("mlast_" + mu, latest); continue; }
                 if (latest > last) {
                     String what = latest - last == 1 ? "Chapter " + latest + " is out" : "Chapters " + (last + 1) + "–" + latest + " are out";
-                    notify(ctx, (int) (Long.parseLong(mu) % 1000000000L), o.optString("title", "New chapter"), what + " 📖");
+                    notify(ctx, (int) (Long.parseLong(mu) % 1000000000L), o.optString("title", "New chapter"), what + " 📖", latest - last);
                     ed.putInt("mlast_" + mu, latest);
                 }
                 Thread.sleep(1200);
             }
             ed.apply();
         } catch (Exception ignored) { }
+    }
+
+    /** Everything was seen inside the app: clear the notifications, which also clears the number on the app icon. */
+    static void clearAll(Context ctx) {
+        ((NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE)).cancelAll();
     }
 
     static void scheduleExact(Context ctx, long airingAtSec) {
@@ -199,7 +204,7 @@ public class AiringWorker extends Worker {
                         title = t.isNull("english") ? t.optString("romaji") : t.optString("english");
                     }
                     String what = aired - last == 1 ? "Episode " + aired + " is out" : "Episodes " + (last + 1) + "–" + aired + " are out";
-                    notify(ctx, id, title, what + " 🎉");
+                    notify(ctx, id, title, what + " 🎉", aired - last);
                     ed.putInt("last_" + id, aired);
                 }
             }
@@ -229,11 +234,16 @@ public class AiringWorker extends Worker {
         } finally { c.disconnect(); }
     }
 
-    static void notify(Context ctx, int id, String title, String text) {
+    static void notify(Context ctx, int id, String title, String text) { notify(ctx, id, title, text, 1); }
+
+    /** count = how many new episodes / chapters; it becomes the number on the app icon. */
+    static void notify(Context ctx, int id, String title, String text, int count) {
         if (Build.VERSION.SDK_INT >= 33 && ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return;
         NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CHANNEL) == null) {
-            nm.createNotificationChannel(new NotificationChannel(CHANNEL, "New episodes and chapters", NotificationManager.IMPORTANCE_HIGH));
+            NotificationChannel ch = new NotificationChannel(CHANNEL, "New episodes and chapters", NotificationManager.IMPORTANCE_HIGH);
+            ch.setShowBadge(true);
+            nm.createNotificationChannel(ch);
         }
         Intent open = new Intent(ctx, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent pi = PendingIntent.getActivity(ctx, id, open, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
@@ -241,7 +251,7 @@ public class AiringWorker extends Worker {
                 ? new android.app.Notification.Builder(ctx, CHANNEL)
                 : new android.app.Notification.Builder(ctx);
         b.setSmallIcon(R.drawable.ic_notif).setContentTitle(title).setContentText(text)
-                .setAutoCancel(true).setContentIntent(pi).setColor(0xFFEC4899);
+                .setAutoCancel(true).setContentIntent(pi).setColor(0xFFEC4899).setNumber(Math.max(1, count));
         nm.notify(id, b.build());
     }
 }

@@ -1243,6 +1243,7 @@ function updateBell(wiggle){
   const n=state.items.filter(unseenNew).length,d=$("bellDot");if(!d)return;
   d.textContent=n>9?"9+":n;d.classList.toggle("hidden",!n);
   if((n>lastBell&&lastBell>=0&&n)||wiggle){const b=$("bell");b.classList.remove("ring");void b.offsetWidth;b.classList.add("ring");}
+  if(lastBell>0&&!n){try{const B=window.AndroidBridge;if(B&&B.setBadge)B.setBadge(0);}catch(e){}}
   lastBell=n;
 }
 function swipeAway(el,done){

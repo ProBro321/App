@@ -187,6 +187,12 @@ public class MainActivity extends Activity {
             }).start();
         }
 
+        /** Anime List: how many new episodes / chapters are still unseen. 0 clears the number on the app icon. */
+        @JavascriptInterface
+        public void setBadge(final int n) {
+            if (n <= 0) AiringWorker.clearAll(getApplicationContext());
+        }
+
         @JavascriptInterface
         public void testNotification() {
             askNotifications(true);
