@@ -88,11 +88,42 @@
   .badge{position:absolute;top:-.3em;right:-.3em;min-width:1.5em;height:1.5em;border-radius:1em;background:#e5412f;color:#fff;font-size:.95em;font-weight:800;display:grid;place-items:center;border:.12em solid #fff;}
   .banner{position:absolute;left:.6em;right:.6em;top:2.4em;z-index:9;background:#fff;color:#111;border-radius:1.2em;padding:.7em .9em;font-size:.9em;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:sh .3s;}
   .note[data-ev]{background:#fff;color:#111;}
+  .chat{position:relative;}
+  .bmenu{position:absolute;left:12%;z-index:7;background:#fff;color:#111;border-radius:1em;box-shadow:0 8px 26px rgba(0,0,0,.4);font-size:.95em;font-weight:700;overflow:hidden;}
+  .bmenu div{padding:.8em 1.3em;border-bottom:1px solid #eee;}
+  .gtool{display:flex;background:#111;color:#fff;flex:0 0 auto;}
+  .gtool div{flex:1;display:flex;flex-direction:column;align-items:center;gap:.2em;padding:.7em;font-size:.8em;font-weight:700;border-radius:1em;}
+  .gtool svg{width:1.8em;height:1.8em;}
+  .sheet{position:absolute;left:0;right:0;bottom:0;z-index:7;background:#fff;color:#111;border-radius:1.4em 1.4em 0 0;padding:1em;box-shadow:0 -8px 30px rgba(0,0,0,.5);animation:shu .25s;}
+  @keyframes shu{from{transform:translateY(100%);}}
+  .sheet .srow{display:grid;grid-template-columns:repeat(3,1fr);margin-top:.9em;}
+  .fldbox{border:2px solid #d5d8de;border-radius:.8em;padding:.7em .9em;font-size:1.05em;min-height:2.7em;}
+  .addc{flex:0 0 2.6em;height:2.6em;border-radius:50%;background:#e8f0fe;color:#1a73e8;display:grid;place-items:center;font-size:1.2em;font-weight:800;}
+  .lnk{color:#1a73e8;font-weight:600;word-break:break-all;}
   .sbtn{background:#1a73e8;color:#fff;border-radius:1.4em;padding:.6em 1.2em;font-weight:800;font-size:.9em;text-align:center;}
   .hand{position:absolute;z-index:30;font-size:2.6em;pointer-events:none;filter:drop-shadow(0 3px 4px rgba(0,0,0,.5));}
   .hand.left{top:45%;left:70%;animation:hL 1.6s ease-in-out infinite;}
   .hand.right{top:45%;left:15%;animation:hR 1.6s ease-in-out infinite;}
   .hand.down{top:0;left:44%;animation:hD 1.6s ease-in-out infinite;}
+  .hand.downr{top:0;left:72%;animation:hD 1.6s ease-in-out infinite;}
+  .hand.downl{top:0;left:12%;animation:hD 1.6s ease-in-out infinite;}
+  /* control centre in the Xiaomi style */
+  .cc{background:rgba(70,78,92,.96)!important;gap:.8em!important;padding-top:1.6em!important;}
+  .cchead{display:flex;justify-content:space-between;align-items:center;font-size:.85em;font-weight:600;padding:0 .3em .2em;}
+  .cchead .r{display:flex;gap:.35em;align-items:center;}.cchead svg{width:1.2em;height:1.2em;}
+  .ccgrid{display:grid;grid-template-columns:1fr 1fr;gap:.6em;}
+  .q.big{border-radius:1.5em;min-height:4.2em;background:rgba(20,24,34,.55);}
+  .q.big.on{background:#fff;color:#111;}.q.big.on svg{color:#2f7df6;}
+  .q.big[data-ev="qs:data"].on svg{color:#1f9d5b;}
+  .media{flex:1;min-height:8em;border-radius:1.5em;background:rgba(20,24,34,.55);padding:.9em;display:flex;flex-direction:column;justify-content:space-between;font-size:.8em;}
+  .media .mc{font-size:1.4em;text-align:center;}
+  .vslider{flex:1;min-height:8em;border-radius:1.5em;background:rgba(20,24,34,.55);position:relative;overflow:hidden;}
+  .vslider i{position:absolute;left:0;right:0;bottom:0;background:#fff;}
+  .vslider span{position:absolute;bottom:.6em;left:0;right:0;text-align:center;color:#f5a623;font-size:1.3em;}
+  .rgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:.9em .6em;justify-items:center;padding:.4em 0;}
+  .rq{width:3.7em;height:3.7em;border-radius:50%;background:rgba(20,24,34,.6);display:grid;place-items:center;}
+  .rq svg{width:1.7em;height:1.7em;}
+  .rq.on{background:#fff;color:#2f7df6;}
   .hand.up{top:75%;left:44%;animation:hU 1.6s ease-in-out infinite;}
   @keyframes hL{0%{transform:none;opacity:0}15%{opacity:1}80%{transform:translateX(-7em);opacity:1}100%{transform:translateX(-7em);opacity:0}}
   @keyframes hR{0%{transform:none;opacity:0}15%{opacity:1}80%{transform:translateX(7em);opacity:1}100%{transform:translateX(7em);opacity:0}}
@@ -199,7 +230,7 @@
   .popup .okb{background:#e5412f;color:#fff;border-radius:.8em;padding:.9em;font-weight:800;margin-top:.8em;}
   .pmenu{background:rgba(0,0,0,.8);display:flex;flex-direction:column;gap:1.2em;align-items:center;justify-content:center;}
   .pmenu div{background:#fff;color:#111;border-radius:1.4em;padding:1em 1.6em;font-weight:800;min-width:11em;text-align:center;}
-  .toast{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);z-index:40;background:var(--ok);color:#fff;font-weight:800;font-size:1.5em;border-radius:1em;padding:.5em 1em;animation:toast .9s forwards;pointer-events:none;}
+  .toast{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);z-index:40;background:var(--ok);color:#fff;font-weight:800;font-size:1em;white-space:nowrap;border-radius:2em;padding:.45em 1em;animation:toast .9s forwards;pointer-events:none;}
   @keyframes toast{0%{opacity:0;transform:translate(-50%,-30%) scale(.7)}20%{opacity:1;transform:translate(-50%,-50%) scale(1)}75%{opacity:1}100%{opacity:0}}
   .shake{animation:shake .35s;}
   @keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
