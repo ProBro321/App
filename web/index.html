@@ -339,6 +339,8 @@
   .tdel:hover,.rowdel:hover{background:rgba(255,107,91,.12);color:#ff6b5b;}
 
   .wcard.pic::after{display:none;}
+  .wcard.named .cname{visibility:hidden;}
+  .wcard.named{aspect-ratio:1.585;display:flex;flex-direction:column;justify-content:space-between;}
   .wcard.pic{box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}
   .looklbl{font-size:11px;color:var(--muted);margin:6px 0 6px;}
   .skins{display:flex;gap:8px;flex-wrap:wrap;}
@@ -1069,6 +1071,14 @@ state=load();
   try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
   window.__fixMsg="Fixed: removed the double ₪675 and matched your bank ✓";
 })();
+/* One-time: give my two cards their pictures (only the wallet that has these exact cards). */
+(function(){
+  const P={"ca9t2bxqzsms73do96":"cards/pepper.jpg","xm4js4cl57ms73k0mt":"cards/max.jpg"},FIX="cardpics-1";
+  state.fixes=state.fixes||{};if(state.fixes[FIX])return;let n=0;
+  (state.cards||[]).forEach(c=>{if(P[c.id]&&!c.img){c.img=P[c.id];c.imgNamed=true;n++;}});
+  if(!n)return;state.fixes[FIX]=true;
+  try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
+})();
 function load(){
   try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.tx&&s.cards)return normalize(s);}catch(e){}
   const s=normalize(migrateFromV1()||seed());
@@ -1284,7 +1294,7 @@ function renderCarousel(){
       pace=p.status==="over"?t("limitReset",cur(c.limit),resetTxt):t("perDay",cur(Math.floor(p.perDay)),p.daysLeft,resetTxt);
     }
     const el=document.createElement("div");el.className="wcard";
-    el.style.background=cardBg(c,i);if(c.img)el.classList.add("pic");
+    el.style.background=cardBg(c,i);if(c.img)el.classList.add("pic");if(c.img&&c.imgNamed)el.classList.add("named");
     el.innerHTML=`
       <div class="top"><span class="cname">${escapeHtml(c.name)}</span><span class="pill">${pill}</span></div>
       <div style="position:relative;z-index:1">
@@ -1868,9 +1878,9 @@ function renderCardEditor(){
       <div class="skins">${Object.keys(CARD_SKINS).map(k=>`<button class="skin${!c.img&&(c.skin===k||(!c.skin&&CARD_SKINS[k]===CARD_GRADIENTS[state.cards.indexOf(c)%CARD_GRADIENTS.length]))?" on":""}" data-k="${k}" style="background:${CARD_SKINS[k]}"></button>`).join("")}</div>
       <div class="r1" style="margin-top:8px"><button class="ghostbtn picbtn" style="margin:0">${t("cardPic")}</button>${c.img?`<button class="ghostbtn picdel" style="margin:0;flex:0 0 auto;width:auto;padding-left:14px;padding-right:14px">${t("cardPicDel")}</button>`:""}</div>
       ${c.img?`<div class="picprev" style="background:${cardBg(c,0)}"><span>${escapeHtml(c.name)}</span></div>`:""}`;
-    row.querySelectorAll(".skin").forEach(b=>b.onclick=()=>{c.skin=b.dataset.k;delete c.img;save();renderCardEditor();renderEverything();});
+    row.querySelectorAll(".skin").forEach(b=>b.onclick=()=>{c.skin=b.dataset.k;delete c.img;delete c.imgNamed;save();renderCardEditor();renderEverything();});
     row.querySelector(".picbtn").onclick=()=>pickCardImage(c);
-    if(row.querySelector(".picdel"))row.querySelector(".picdel").onclick=()=>{delete c.img;save();renderCardEditor();renderEverything();};
+    if(row.querySelector(".picdel"))row.querySelector(".picdel").onclick=()=>{delete c.img;delete c.imgNamed;save();renderCardEditor();renderEverything();};
     const [nameI,limI,dayI]=row.querySelectorAll("input");
     nameI.oninput=()=>{c.name=nameI.value||t("defaultCard");save();};
     limI.oninput=()=>{c.limit=Math.max(0,parseFloat(limI.value)||0);save();};
@@ -1893,7 +1903,7 @@ function pickCardImage(c){
       // shrink to card size so it stays small enough to save
       const W=640,H=404,cv=document.createElement("canvas");cv.width=W;cv.height=H;const g=cv.getContext("2d");
       const sc=Math.max(W/im.width,H/im.height),w=im.width*sc,h=im.height*sc;g.drawImage(im,(W-w)/2,(H-h)/2,w,h);
-      c.img=cv.toDataURL("image/jpeg",.82);save();renderCardEditor();renderEverything();toast(t("saved"));};
+      c.img=cv.toDataURL("image/jpeg",.82);delete c.imgNamed;save();renderCardEditor();renderEverything();toast(t("saved"));};
       im.onerror=()=>toast(t("cantSave"));im.src=rd.result;};
     rd.readAsDataURL(file);};
   f.click();
