@@ -1,0 +1,15 @@
+name: cors check
+on: { push: { paths: ['.github/workflows/corscheck.yml'] } }
+jobs:
+  get:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -sS -D - -o /dev/null -H "Origin: https://probro321.github.io" https://api.mangaupdates.com/v1/series/15180124327 | tee h.txt; grep -i '^access-control-allow-origin' h.txt
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -sS -D - -o /dev/null -X OPTIONS -H "Origin: https://probro321.github.io" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type" https://api.mangaupdates.com/v1/series/search | tee h.txt; grep -i '^access-control-allow-origin' h.txt && grep -i '^access-control-allow-headers' h.txt
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -sS -D - -o /dev/null -X POST -H "Origin: https://probro321.github.io" -H "content-type: application/json" -d '{"search":"infinite mage"}' https://api.mangaupdates.com/v1/series/search | tee h.txt; grep -i '^access-control-allow-origin' h.txt
