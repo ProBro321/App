@@ -764,7 +764,7 @@ en:{
   oweNow:"You owe right now",acrossCards:n=>`across ${n} card${n>1?"s":""} this cycle`,
   spentIn:m=>`Spent in ${m}`,samePoint:"same point last month",
   newThisMonth:"New this month",sameAs:x=>`Same as ${x}`,vs:x=>`vs ${x}`,
-  nextDays:x=>`${x} in the next 30 days`,cash:"Cash",auto:"Auto",
+  nextDays:x=>`${x} in the next 10 days`,cash:"Cash",auto:"Auto",
   emptyHome:"Nothing logged yet. Tap + to add your first expense.",
   searchPh:"Search reasons, categories, amounts",allCards:"All cards",allTime:"All time",
   results:(n,q)=>`${n} result${n>1?"s":""} for “${q}” across all time`,spent:"Spent",received:"Received",
@@ -840,7 +840,7 @@ he:{
   oweNow:"חוב כרגע",acrossCards:n=>n===1?"בכרטיס אחד במחזור הזה":`ב־${n} כרטיסים במחזור הזה`,
   spentIn:m=>`הוצאות ב${m}`,samePoint:"אותו זמן בחודש שעבר",
   newThisMonth:"חדש החודש",sameAs:x=>`כמו ${x}`,vs:x=>`לעומת ${x}`,
-  nextDays:x=>`${x} ב־30 הימים הקרובים`,cash:"מזומן",auto:"אוטומטי",
+  nextDays:x=>`${x} ב־10 הימים הקרובים`,cash:"מזומן",auto:"אוטומטי",
   emptyHome:"עוד לא נרשם כלום. לחצו + כדי להוסיף הוצאה ראשונה.",
   searchPh:"חיפוש לפי סיבה, קטגוריה או סכום",allCards:"כל הכרטיסים",allTime:"כל הזמן",
   results:(n,q)=>`${n===1?"תוצאה אחת":n+" תוצאות"} עבור „${q}” מכל הזמן`,spent:"הוצאות",received:"הכנסות",
@@ -916,7 +916,7 @@ ru:{
   oweNow:"Долг по карте",acrossCards:n=>`по ${n} ${ruP(n,"карте","картам","картам")} в этом периоде`,
   spentIn:m=>`Потрачено: ${m}`,samePoint:"в это же время в прошлом месяце",
   newThisMonth:"Новое в этом месяце",sameAs:x=>`Как в ${x}`,vs:x=>`чем в ${x}`,
-  nextDays:x=>`${x} в ближайшие 30 дней`,cash:"Наличные",auto:"Авто",
+  nextDays:x=>`${x} в ближайшие 10 дней`,cash:"Наличные",auto:"Авто",
   emptyHome:"Пока ничего не записано. Нажмите большую кнопку + внизу, чтобы записать первый расход.",
   searchPh:"Поиск по описанию, категории, сумме",allCards:"Все",allTime:"За всё время",
   results:(n,q)=>`${n} ${ruP(n,"результат","результата","результатов")} для «${q}»`,spent:"Потрачено",received:"Получено",
@@ -1272,13 +1272,14 @@ function renderHero(){
   rollTo($("heroBal"),"bal",bal,money);rollTo($("heroOwed"),state.cashOnly?"incm":"owed",state.cashOnly?incM:owed,cur);rollTo($("heroMonth"),"month",thisM,cur);
 }
 function renderUpcoming(){
-  const list=upcomingBills();const sec=$("upcomingSec");
+  // only bills coming up soon — a bill that was just paid stays hidden until its next date gets close
+  const SOON=10;
+  const list=upcomingBills().filter(x=>x.due-startOfDay(Date.now())<=SOON*DAY);const sec=$("upcomingSec");
   if(!list.length){sec.classList.add("hidden");return;}
   sec.classList.remove("hidden");
-  const in30=list.filter(x=>x.due-startOfDay(Date.now())<=30*DAY);
-  $("upcomingTotal").textContent=t("nextDays",cur(in30.reduce((a,x)=>a+(+x.b.amount||0),0)));
+  $("upcomingTotal").textContent=t("nextDays",cur(list.reduce((a,x)=>a+(+x.b.amount||0),0)));
   const L2=$("upcomingList");L2.innerHTML="";
-  list.slice(0,4).forEach(({b,due})=>{
+  list.slice(0,6).forEach(({b,due})=>{
     const days=Math.round((due-startOfDay(Date.now()))/DAY);
     const card=cardById(b.cardId);
     const r=document.createElement("div");r.className="billup";
