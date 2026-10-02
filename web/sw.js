@@ -11,7 +11,7 @@ self.addEventListener("activate",e=>e.waitUntil(
 self.addEventListener("fetch",e=>{
   const req=e.request,url=new URL(req.url);
   if(req.method!=="GET"||url.origin!==location.origin||url.searchParams.has("ping"))return;
-  if(["anime/","animepc/"].some(p=>url.pathname.startsWith(new URL(p,self.registration.scope).pathname)))return; // separate app, has its own worker
+  if(["anime/","animepc/","robux/"].some(p=>url.pathname.startsWith(new URL(p,self.registration.scope).pathname)))return; // separate app, has its own worker
   const key=req.mode==="navigate"?PAGE:req.url.split("?")[0];
   // Ask for the page with a unique address so no server cache can hand back an old version.
   const fresh=req.mode==="navigate"?fetch(PAGE+"?fresh="+Date.now(),{cache:"no-store",credentials:"same-origin"}):fetch(req,{cache:"no-store"});

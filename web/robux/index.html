@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Robux Rewards</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2311131c'/%3E%3Cpath d='M32 10l19 11v22L32 54 13 43V21z' fill='%2337e6a0'/%3E%3Crect x='25' y='25' width='14' height='14' rx='2' fill='%2311131c'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0b0d14;--panel:#141826;--line:#262c40;--text:#f3f5fb;--muted:#8d95ad;--mint:#37e6a0;--gold:#ffc83d;--hot:#ff4f6d;}
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{background:radial-gradient(1200px 700px at 50% -10%,#1b2140 0%,var(--bg) 60%);color:var(--text);font-family:Rubik,system-ui,"Segoe UI",Arial,sans-serif;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;overflow:hidden;user-select:none;}
+  .wrap{position:relative;width:min(96vw,calc((100vh - 120px)*960/560));aspect-ratio:960/560;border-radius:22px;overflow:hidden;
+    box-shadow:0 0 0 2px #2a3150,0 30px 80px rgba(0,0,0,.6),0 0 120px rgba(55,230,160,.08);background:#000;}
+  canvas{width:100%;height:100%;display:block;}
+  .hud{position:absolute;inset:14px 16px auto 16px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;direction:ltr;font-weight:900;}
+  .pill{background:rgba(10,12,20,.72);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(6px);border-radius:14px;padding:8px 14px;font-size:clamp(12px,1.5vw,17px);display:flex;gap:8px;align-items:center;}
+  .pill b{color:var(--mint);}
+  .dots{display:flex;gap:5px;}
+  .dots i{width:clamp(10px,1.3vw,16px);height:clamp(10px,1.3vw,16px);border-radius:5px;background:#2a3150;transform:rotate(45deg) scale(.8);transition:.3s;}
+  .dots i.done{background:var(--mint);box-shadow:0 0 10px var(--mint);}
+  .dots i.now{background:var(--gold);box-shadow:0 0 12px var(--gold);transform:rotate(45deg) scale(1);}
+  .ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(10px,2vw,22px);text-align:center;padding:4%;
+    background:rgba(8,9,16,.82);backdrop-filter:blur(8px);transition:opacity .35s;}
+  .ov.hide{opacity:0;pointer-events:none;}
+  h1{margin:0;font-weight:900;font-size:clamp(34px,7vw,84px);letter-spacing:-.02em;line-height:.95;direction:ltr;
+    background:linear-gradient(180deg,#fff 20%,var(--mint));-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 6px 0 rgba(0,0,0,.45));}
+  h1 span{display:block;font-size:.42em;letter-spacing:.38em;color:var(--gold);-webkit-text-fill-color:var(--gold);margin-top:.3em;}
+  h2{margin:0;font-weight:900;font-size:clamp(24px,4.6vw,56px);}
+  p{margin:0;color:var(--muted);font-size:clamp(13px,1.8vw,20px);font-weight:500;line-height:1.5;max-width:34em;}
+  .keys{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;direction:rtl;color:var(--muted);font-size:clamp(12px,1.5vw,17px);font-weight:700;}
+  kbd{display:inline-block;min-width:2.1em;padding:.25em .5em;border-radius:8px;background:#20263b;border:1px solid #39415f;border-bottom-width:3px;color:#fff;font:inherit;font-weight:900;direction:ltr;}
+  button{font:inherit;font-weight:900;border:0;cursor:pointer;border-radius:18px;padding:.7em 1.7em;font-size:clamp(16px,2.4vw,28px);color:#06231a;
+    background:linear-gradient(180deg,#6dffc6,var(--mint));box-shadow:0 6px 0 #169c69,0 14px 30px rgba(55,230,160,.35);transition:transform .08s,box-shadow .08s;}
+  button:hover{transform:translateY(-2px);}
+  button:active{transform:translateY(4px);box-shadow:0 2px 0 #169c69;}
+  button.ghost{background:#20263b;color:#fff;box-shadow:0 5px 0 #121626;font-size:clamp(13px,1.7vw,19px);}
+  .row{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;}
+  .call{font-weight:900;font-size:clamp(28px,6vw,74px);line-height:1.1;color:#fff;text-shadow:0 0 30px rgba(255,200,61,.6),0 5px 0 #a9790a;
+    background:linear-gradient(180deg,#fff3c4,var(--gold));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:pop 1.6s ease-in-out infinite;}
+  @keyframes pop{50%{transform:scale(1.04) rotate(-1deg);}}
+  .foot{color:#59607a;font-size:13px;font-weight:500;}
+  .foot a{color:inherit;}
+  #phone{display:none;}
+  @media (max-width:820px),(pointer:coarse){#phone{display:flex;position:fixed;inset:0;z-index:9;background:var(--bg);}}
+  @media (prefers-reduced-motion:reduce){.call{animation:none;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="cv" width="960" height="560"></canvas>
+  <div class="hud" id="hud">
+    <div class="pill">שלב <b id="hLvl">1</b>/10</div>
+    <div class="dots" id="dots"></div>
+    <div class="pill">💎 <b id="hCoins">0</b> · 💀 <span id="hDeaths">0</span></div>
+  </div>
+
+  <div class="ov" id="ovStart">
+    <h1>ROBUX<span>REWARDS</span></h1>
+    <p>עברי את כל <b style="color:#fff">10 השלבים</b> כדי לקבל את הפרס שלך.<br>אל תיפלי ללבה, תיזהרי מהקוצים ומהסליים!</p>
+    <div class="keys"><span><kbd>←</kbd> <kbd>→</kbd> או <kbd>A</kbd> <kbd>D</kbd> — לזוז</span><span><kbd>Space</kbd> / <kbd>↑</kbd> — לקפוץ</span><span><kbd>R</kbd> — להתחיל שלב מחדש</span></div>
+    <div class="row"><button id="bPlay">▶ שחקי</button><button class="ghost hide" id="bReset" style="display:none">להתחיל מהתחלה</button></div>
+  </div>
+
+  <div class="ov hide" id="ovNext">
+    <h2 id="nTitle">שלב הושלם!</h2>
+    <p id="nSub"></p>
+    <button id="bNext">לשלב הבא ←</button>
+  </div>
+
+  <div class="ov hide" id="ovWin">
+    <p style="color:var(--mint);font-weight:900;letter-spacing:.1em">🎉 סיימת את כל 10 השלבים 🎉</p>
+    <div class="call">תתקשרי לעמנואל לרובוקס</div>
+    <p id="wStats"></p>
+    <div class="row"><button id="bMsg">💬 שלחי הודעה לבקש רובוקס</button><button class="ghost" id="bCopy">העתיקי הודעה</button><button class="ghost" id="bAgain">לשחק שוב</button></div>
+  </div>
+</div>
+<div class="foot">משחק פרטי למשפחה · לא קשור לרובלוקס</div>
+<div class="ov" id="phone"><h2>💻</h2><p style="color:#fff;font-size:20px">המשחק הזה עובד רק במחשב.<br>תפתחי אותו במחשב עם מקלדת.</p></div>
+
+<script src="engine.js"></script>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),cv=$("cv"),g=cv.getContext("2d"),W=960,H=560;
+const KEY="robux_rewards_v1";
+let save={lvl:0,coins:0,deaths:0,done:false};
+try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s.lvl==="number")save=Object.assign(save,s);}catch(e){}
+const store=()=>{try{localStorage.setItem(KEY,JSON.stringify(save));}catch(e){}};
+const THEMES=[["#1a2a5e","#0d1330","#37e6a0","#1f8f68"],["#3a1d5e","#140d30","#b388ff","#6a3fd0"],["#5e2a1a","#2a0f0d","#ffb04d","#c06a1f"],["#103c52","#081a26","#4dd8ff","#1f7fa8"],
+  ["#294d1a","#0e1f0d","#a6f04d","#5a9a1f"],["#5e1a45","#260d1f","#ff6fb5","#b82f78"],["#1a4a5e","#0d2030","#6dffe0","#1fa890"],["#4a3a12","#1c1508","#ffd84d","#b8901f"],
+  ["#2a1a5e","#0f0d30","#8f9bff","#4450d0"],["#5e1a1a","#1f0808","#ff5d5d","#b82020"]];
+let L,s,lvl=0,mode="menu",coins,got=0,camX=0,parts=[],shake=0,frame=0,winT=0,deadT=0,confetti=[];
+const keys={};
+addEventListener("keydown",e=>{if(["ArrowLeft","ArrowRight","ArrowUp","Space","KeyA","KeyD","KeyW"].includes(e.code))e.preventDefault();keys[e.code]=true;
+  if(e.code==="KeyR"&&mode==="play")die(true);
+  if((e.code==="Enter"||e.code==="Space")&&!e.repeat){if(mode==="menu")$("bPlay").click();else if(mode==="next")$("bNext").click();}});
+addEventListener("keyup",e=>{keys[e.code]=false;});
+addEventListener("blur",()=>{for(const k in keys)keys[k]=false;});
+
+/* sound */
+let ac;const snd=(f,d=.08,type="square",v=.05,slide=0)=>{try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),a=ac.createGain();
+  o.type=type;o.frequency.value=f;if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(40,f+slide),ac.currentTime+d);
+  a.gain.value=v;a.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+d);o.connect(a).connect(ac.destination);o.start();o.stop(ac.currentTime+d);}catch(e){}};
+
+function burst(x,y,col,n=14,sp=5){for(let i=0;i<n;i++){const a=Math.random()*6.283,v=Math.random()*sp+1;parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-2,l:30+Math.random()*20,c:col,s:3+Math.random()*4});}}
+function startLevel(i){lvl=i;L=LEVELS[i];s=spawn(L);coins=L.coins.map(c=>({...c,got:false}));got=0;camX=0;parts=[];mode="play";deadT=0;winT=0;hud();}
+function hud(){$("hLvl").textContent=lvl+1;$("hCoins").textContent=save.coins+got;$("hDeaths").textContent=save.deaths;
+  $("dots").innerHTML=LEVELS.map((_,i)=>`<i class="${i<lvl?"done":i===lvl?"now":""}"></i>`).join("");}
+function die(silent){if(mode!=="play")return;mode="dead";deadT=34;save.deaths++;store();hud();shake=silent?0:12;burst(s.x+PW/2,s.y+PH/2,"#ff4f6d",26,7);if(!silent)snd(220,.3,"sawtooth",.06,-170);}
+function win(){mode="won";winT=50;snd(523,.12);setTimeout(()=>snd(659,.12),110);setTimeout(()=>snd(784,.2),220);burst(L.goal[0]*T+T/2,(10-L.goal[1])*T,"#ffc83d",40,8);}
+function afterWin(){
+  save.coins+=got;got=0;
+  if(lvl>=LEVELS.length-1){save.done=true;save.lvl=0;store();showWin();return;}
+  save.lvl=lvl+1;store();mode="next";
+  $("nTitle").textContent=`שלב ${lvl+1} הושלם! 🎉`;$("nSub").textContent=lvl+2===10?"נשאר רק השלב האחרון — הכי קשה!":`נשארו עוד ${9-lvl} שלבים עד הפרס`;
+  $("ovNext").classList.remove("hide");
+}
+const MSG="סיימתי את כל 10 השלבים ב-Robux Rewards! 🎉 מגיע לי רובוקס 😄";
+function showWin(){mode="end";$("wStats").textContent=`אספת ${save.coins} יהלומים · נפסלת ${save.deaths} פעמים`;$("ovWin").classList.remove("hide");$("hud").style.opacity=0;
+  for(let i=0;i<160;i++)confetti.push({x:Math.random()*W,y:-Math.random()*H,vy:2+Math.random()*4,vx:Math.random()*2-1,r:Math.random()*6.28,c:["#37e6a0","#ffc83d","#ff4f6d","#6fa8ff","#fff"][i%5],s:6+Math.random()*8});
+  [523,659,784,1047].forEach((f,i)=>setTimeout(()=>snd(f,.25,"triangle",.07),i*150));}
+$("bPlay").onclick=()=>{$("ovStart").classList.add("hide");startLevel(Math.min(save.lvl,LEVELS.length-1));snd(440,.1);};
+$("bNext").onclick=()=>{$("ovNext").classList.add("hide");startLevel(lvl+1);};
+$("bAgain").onclick=()=>{save={lvl:0,coins:0,deaths:0,done:false};store();confetti=[];$("ovWin").classList.add("hide");$("hud").style.opacity=1;startLevel(0);};
+$("bReset").onclick=()=>{save={lvl:0,coins:0,deaths:0,done:false};store();$("bPlay").click();};
+$("bMsg").onclick=()=>window.open("https://wa.me/?text="+encodeURIComponent(MSG),"_blank","noopener");
+$("bCopy").onclick=async()=>{try{await navigator.clipboard.writeText(MSG);$("bCopy").textContent="הועתק ✓";}catch(e){prompt("העתיקי את ההודעה:",MSG);}};
+if(save.lvl>0){$("bPlay").textContent=`▶ להמשיך משלב ${save.lvl+1}`;$("bReset").style.display="";}
+
+function update(){
+  frame++;
+  if(mode==="play"){
+    const wasVy=s.vy;
+    step(s,{l:keys.ArrowLeft||keys.KeyA,r:keys.ArrowRight||keys.KeyD,j:keys.Space||keys.ArrowUp||keys.KeyW},L);
+    if(s.jumped){snd(420,.09,"square",.04,260);burst(s.x+PW/2,s.y+PH,"#ffffff",5,2);}
+    if(s.pad){snd(300,.2,"square",.05,700);burst(s.x+PW/2,s.y+PH,"#ffc83d",12,4);}
+    if(s.landed&&wasVy>7)burst(s.x+PW/2,s.y+PH,"#cfd6ee",6,2.5);
+    for(const c of coins)if(!c.got&&Math.abs(c.x-(s.x+PW/2))<24&&Math.abs(c.y-(s.y+PH/2))<28){c.got=true;got++;hud();snd(880,.07,"triangle",.06,500);burst(c.x,c.y,"#37e6a0",8,3);}
+    if(s.dead)die();else if(s.win)win();
+  }else if(mode==="dead"){if(--deadT<=0){const keep=coins;s=spawn(L);coins=keep;mode="play";}}
+  else if(mode==="won"){if(--winT<=0)afterWin();}
+  for(const p of parts){p.x+=p.vx;p.y+=p.vy;p.vy+=.25;p.l--;}parts=parts.filter(p=>p.l>0);
+  if(shake>0)shake--;
+  if(s){const tx=Math.max(0,Math.min(L.w*T-W,s.x+PW/2-W*.42));camX+=(tx-camX)*.12;}
+  for(const c of confetti){c.y+=c.vy;c.x+=c.vx+Math.sin((frame+c.s*9)/20);c.r+=.1;if(c.y>H+20){c.y=-20;c.x=Math.random()*W;}}
+}
+
+function rr(x,y,w,h,r){g.beginPath();g.roundRect(x,y,w,h,r);g.fill();}
+function draw(){
+  const th=THEMES[(L?lvl:0)%THEMES.length];
+  const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,th[0]);bg.addColorStop(1,th[1]);g.fillStyle=bg;g.fillRect(0,0,W,H);
+  // far blocks (parallax)
+  for(let layer=0;layer<3;layer++){const sp=[.15,.3,.5][layer],sz=[90,60,36][layer];g.fillStyle=`rgba(255,255,255,${[.03,.045,.06][layer]})`;
+    for(let i=0;i<14;i++){const x=((i*263+layer*97-camX*sp)%(W+200)+W+200)%(W+200)-100,y=(i*137+layer*61)%(H-120)+20+Math.sin((frame+i*40)/90)*8;rr(x,y,sz,sz,sz*.18);}}
+  if(!L){return;}
+  g.save();g.translate(-Math.round(camX)+(shake?(Math.random()-.5)*shake:0),shake?(Math.random()-.5)*shake:0);
+  const c0=Math.max(0,Math.floor(camX/T)-1),c1=Math.min(L.w-1,c0+W/T+2);
+  for(let r=0;r<ROWS;r++)for(let c=c0;c<=c1;c++){const ch=L.m[r][c],x=c*T,y=r*T;
+    if(ch==="#"){const top=r===0||L.m[r-1][c]!=="#"&&L.m[r-1][c]!=="J";g.fillStyle=top?th[2]:th[3];g.fillRect(x,y,T,T);
+      g.fillStyle="rgba(0,0,0,.16)";g.fillRect(x,y+T-5,T,5);g.fillRect(x+T-3,y,3,T);g.fillStyle="rgba(255,255,255,.2)";g.fillRect(x,y,T,top?6:2);
+      if(!top){g.fillStyle="rgba(0,0,0,.1)";g.fillRect(x+8,y+10,8,8);g.fillRect(x+24,y+22,6,6);}}
+    else if(ch==="^"){g.fillStyle="#e9edf7";for(let k=0;k<2;k++){g.beginPath();g.moveTo(x+k*20+2,y+T);g.lineTo(x+k*20+10,y+12);g.lineTo(x+k*20+18,y+T);g.fill();}
+      g.fillStyle="rgba(0,0,0,.25)";for(let k=0;k<2;k++){g.beginPath();g.moveTo(x+k*20+10,y+12);g.lineTo(x+k*20+18,y+T);g.lineTo(x+k*20+10,y+T);g.fill();}}
+    else if(ch==="L"){const wv=Math.sin((frame+c*14)/14)*4;const lg=g.createLinearGradient(0,y,0,y+T);lg.addColorStop(0,"#ffd24d");lg.addColorStop(.35,"#ff6a2b");lg.addColorStop(1,"#b81d1d");
+      g.fillStyle=lg;g.fillRect(x,y+8+wv,T,T);g.fillStyle="rgba(255,240,180,.8)";g.fillRect(x,y+8+wv,T,3);}
+    else if(ch==="J"){g.fillStyle=th[3];g.fillRect(x,y,T,T);const sq=s&&s.pad?6:0;g.fillStyle="#ffc83d";rr(x+3,y-6+sq,T-6,12-sq,5);g.fillStyle="#fff3c4";g.fillRect(x+8,y-4+sq,T-16,3);
+      g.fillStyle="rgba(255,200,61,.5)";g.beginPath();const b=(frame%40)/40;g.moveTo(x+T/2-7,y-14-b*14);g.lineTo(x+T/2,y-22-b*14);g.lineTo(x+T/2+7,y-14-b*14);g.fill();}
+  }
+  // moving platforms
+  for(const mv of L.movers){const p=moverAt(mv,s.t);g.fillStyle="rgba(0,0,0,.3)";rr(p.x+3,p.y+5,mv.w,16,7);g.fillStyle="#f3f5fb";rr(p.x,p.y,mv.w,16,7);g.fillStyle=th[2];rr(p.x+5,p.y+4,mv.w-10,5,3);}
+  // gems
+  for(const c of coins)if(!c.got){const b=Math.sin((frame+c.x)/16)*4,sx=Math.abs(Math.cos((frame+c.x/3)/22));g.save();g.translate(c.x,c.y+b);g.scale(.35+sx*.65,1);
+    g.fillStyle="#37e6a0";g.beginPath();g.moveTo(0,-12);g.lineTo(11,-3);g.lineTo(0,13);g.lineTo(-11,-3);g.fill();g.fillStyle="#b7ffe2";g.beginPath();g.moveTo(0,-12);g.lineTo(5,-3);g.lineTo(0,2);g.lineTo(-5,-3);g.fill();g.restore();}
+  // slimes
+  for(const e of L.enemies){const p=enemyAt(e,s.t),sq=Math.sin(frame/7)*2;g.fillStyle="#ff4f6d";g.beginPath();g.roundRect(p.x,p.y+4-sq,32,28+sq,[14,14,5,5]);g.fill();
+    g.fillStyle="#fff";g.fillRect(p.x+7,p.y+12-sq,6,8);g.fillRect(p.x+19,p.y+12-sq,6,8);g.fillStyle="#2a0a12";g.fillRect(p.x+9,p.y+15-sq,3,5);g.fillRect(p.x+21,p.y+15-sq,3,5);
+    g.fillRect(p.x+5,p.y+8-sq,9,3);g.fillRect(p.x+18,p.y+8-sq,9,3);}
+  // goal portal
+  {const gx=L.goal[0]*T+T/2,gy=(10-L.goal[1])*T+T-34;for(let i=3;i>=0;i--){g.strokeStyle=`rgba(255,200,61,${.9-i*.2})`;g.lineWidth=5;g.beginPath();g.ellipse(gx,gy,16+i*5+Math.sin(frame/10+i)*2,30+i*5,0,0,6.283);g.stroke();}
+    g.fillStyle="rgba(255,243,196,.9)";g.beginPath();g.ellipse(gx,gy,12,26,0,0,6.283);g.fill();
+    g.fillStyle="#ffc83d";g.font="900 15px Rubik,sans-serif";g.textAlign="center";g.fillText("FINISH",gx,gy-48+Math.sin(frame/15)*3);}
+  // player
+  if(mode==="play"||mode==="won"){const st=Math.min(6,Math.abs(s.vy)*.5),w=PW-(s.ground?0:st*.5),h=PH+(s.ground?0:st),x=s.x+(PW-w)/2,y=s.y+PH-h,dir=s.vx<-.2?-1:1;
+    g.fillStyle="rgba(0,0,0,.25)";g.beginPath();g.ellipse(s.x+PW/2,s.y+PH+2,13,3,0,0,6.283);if(s.ground)g.fill();
+    const leg=s.ground&&Math.abs(s.vx)>.5?Math.sin(frame/3)*5:0;g.fillStyle="#2c3a6b";g.fillRect(x+4,y+h-10,7,10+leg*.3);g.fillRect(x+w-11,y+h-10,7,10-leg*.3);
+    g.fillStyle="#3d7bff";rr(x+2,y+14,w-4,h-22,3);g.fillStyle="#ffd9a8";rr(x+3,y,w-6,16,4);
+    g.fillStyle="#1a1d2b";g.fillRect(x+w/2-6+dir*3,y+5,3,5);g.fillRect(x+w/2+3+dir*3,y+5,3,5);g.fillRect(x+w/2-4+dir*3,y+12,8,2);
+    g.fillStyle="#ffc83d";g.fillRect(x+3,y-3,w-6,5);}
+  for(const p of parts){g.globalAlpha=Math.min(1,p.l/20);g.fillStyle=p.c;g.fillRect(p.x-p.s/2,p.y-p.s/2,p.s,p.s);}g.globalAlpha=1;
+  g.restore();
+  for(const c of confetti){g.save();g.translate(c.x,c.y);g.rotate(c.r);g.fillStyle=c.c;g.fillRect(-c.s/2,-c.s/4,c.s,c.s/2);g.restore();}
+}
+let last=performance.now(),acc=0;
+function loop(now){acc+=Math.min(100,now-last);last=now;while(acc>=1000/60){update();acc-=1000/60;}draw();requestAnimationFrame(loop);}
+L=LEVELS[Math.min(save.lvl,9)];lvl=Math.min(save.lvl,9);s=spawn(L);coins=L.coins.map(c=>({...c,got:false}));hud();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
