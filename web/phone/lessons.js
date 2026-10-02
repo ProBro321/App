@@ -1,0 +1,130 @@
+/* Lessons: every step is something the learner DOES on the practice phone.
+   t: [russian, english] · ok: the action that completes the step · hl: what blinks · hand: swipe hint
+   allow: other actions that are fine during the step · bad: actions that get a special explanation · pre: prepare the phone */
+const UI={
+  title:["Учимся пользоваться телефоном","Let's learn how to use a phone"],
+  sub:["Здесь учебный телефон. Он ненастоящий — в нём ничего нельзя сломать. Выберите урок и делайте то, что написано.","This is a practice phone. It isn't real — nothing here can break. Pick a lesson and do what it says."],
+  done:["Урок пройден!","Lesson complete!"],next:["Следующий урок →","Next lesson →"],list:["К списку уроков","Back to lessons"],again:["Пройти ещё раз","Do it again"],
+  right:["Правильно!","Correct!"],
+  tooLong:["Вы держали палец слишком долго. Коснитесь коротко и сразу отпустите.","You held your finger too long. Touch briefly and let go right away."],
+  tooShort:["Сейчас нужно держать палец, не отпуская, пока не появится меню.","This time keep your finger down — don't let go until something appears."],
+  nudge:["Нажмите туда, где мигает жёлтая рамка.","Touch the spot with the blinking yellow frame."],
+  nudgeSwipe:["Проведите пальцем по экрану, как показывает рука.","Slide your finger across the screen the way the hand shows."],
+  free:["Свободная практика","Free practice"],freeSub:["Нажимайте что угодно — телефон объяснит, что это.","Touch anything — the phone explains what it is."],
+  freeSay:["Нажимайте на что хотите. Здесь нельзя ничего испортить.","Touch whatever you like. You can't break anything here."]
+};
+const NAMES={phone:["Телефон","Phone"],chat:["Сообщения","Messages"],web:["Интернет","Internet"],camera:["Камера","Camera"],mail:["Почта","Mail"],video:["YouTube","YouTube"],gallery:["Галерея","Gallery"],settings:["Настройки","Settings"],
+  calc:["Калькулятор","Calculator"],clock:["Часы","Clock"],cal:["Календарь","Calendar"],notes:["Заметки","Notes"],store:["Магазин","App store"]};
+const EXPL={
+  "app:phone":["«Телефон» — звонить людям.","Phone — for calling people."],"app:chat":["«Сообщения» — переписка. WhatsApp работает так же.","Messages — for texting. WhatsApp works the same way."],
+  "app:web":["«Интернет» (Chrome) — искать что угодно: погоду, новости, адреса.","Internet (Chrome) — look up anything: weather, news, addresses."],"app:camera":["«Камера» — фотографировать и снимать видео.","Camera — take photos and videos."],
+  "app:mail":["«Почта» (Gmail) — письма через интернет.","Mail (Gmail) — letters over the internet."],"app:video":["YouTube — бесплатные видео: песни, фильмы, новости.","YouTube — free videos: songs, films, news."],
+  "app:gallery":["«Галерея» — все ваши фотографии.","Gallery — all your photos."],"app:settings":["«Настройки» — звук, яркость, Wi-Fi, Bluetooth.","Settings — sound, brightness, Wi-Fi, Bluetooth."],
+  "app:store":["«Магазин» — отсюда ставят новые приложения. Большинство бесплатные.","App store — where new apps are installed from. Most are free."],
+  "nav:home":["Кружок — «Домой»: всегда возвращает на главный экран.","Circle — Home: always takes you back to the main screen."],"nav:back":["Треугольник — «Назад»: на один шаг назад.","Triangle — Back: one step back."],
+  "nav:recents":["Квадрат — недавно открытые приложения.","Square — recently opened apps."],"st:battery":["Батарейка — сколько осталось заряда.","Battery — how much charge is left."],
+  "st:wifi":["Значок Wi-Fi — телефон подключён к домашнему интернету.","Wi-Fi icon — the phone is on the home internet."],"st:signal":["Полоски — сила сигнала сотовой связи.","Bars — strength of the mobile signal."],
+  "st:time":["Часы — сколько сейчас времени.","Clock — the current time."],"qs:wifi":["Wi-Fi — домашний интернет без проводов.","Wi-Fi — wireless home internet."],
+  "qs:bt":["Bluetooth — связь с наушниками, колонкой, машиной. Держите долго, чтобы выбрать устройство.","Bluetooth — link to headphones, a speaker, the car. Hold it to choose a device."],
+  "qs:torch":["Фонарик.","Flashlight."],"qs:data":["Мобильный интернет — через SIM-карту, работает на улице.","Mobile data — internet through the SIM card, works outdoors."],
+  "qs:plane":["Режим полёта — отключает всю связь. Если звонки не проходят, проверьте, не включён ли он.","Airplane mode — turns off all signals. If calls don't work, check that this is off."],
+  "qs:silent":["Без звука — телефон не будет звонить вслух.","Silent — the phone won't ring out loud."],
+  "hw:power":["Кнопка питания: коротко — погасить экран, долго — выключить.","Power button: short press — screen off, long press — power menu."],"hw:volup":["Громче.","Volume up."],"hw:voldown":["Тише.","Volume down."]
+};
+const LONG_BAD={ru:UI.tooLong[0],en:UI.tooLong[1]};
+const LESSONS=[
+{id:"touch",t:["Как нажимать","How to touch"],s:["Коротко, долго и пролистывание","Tap, hold and swipe"],steps:[
+ {t:["Коснитесь пальцем зелёной трубки внизу и сразу отпустите палец. Коротко — как будто дотронулись до горячего чайника.","Touch the green phone at the bottom and let go right away. Quick — like touching a hot kettle."],ok:"tap:app:phone",hl:"app:phone"},
+ {t:["Отлично! Короткое касание ОТКРЫВАЕТ приложение. Теперь вернитесь: нажмите кружок в самом низу экрана — это кнопка «Домой».","Great! A short touch OPENS an app. Now go back: press the circle at the very bottom — that's the Home button."],ok:"tap:nav:home",hl:"nav:home"},
+ {t:["Теперь наоборот. Положите палец на трубку и ДЕРЖИТЕ, не отпуская, пока не появится меню.","Now the opposite. Put your finger on the phone icon and HOLD it until a menu appears."],ok:"long:app:phone",hl:"app:phone"},
+ {t:["Видите? Долгое нажатие открывает меню, а не приложение. Если меню выскочило случайно — не страшно. Коснитесь пустого места, чтобы закрыть его.","See? Holding opens a menu, not the app. If a menu pops up by accident, no problem. Touch an empty spot to close it."],ok:"tap:menu:close"},
+ {t:["Запомните: открыть — значит коснулся и отпустил. Не держать! Теперь проведите пальцем по экрану справа налево, как будто листаете страницу.","Remember: to open something, touch and let go. Don't hold! Now slide your finger across the screen from right to left, like turning a page."],ok:"swipe:left",hand:"left"},
+ {t:["Это вторая страница с приложениями. Проведите пальцем слева направо, чтобы вернуться.","This is the second page of apps. Slide from left to right to go back."],ok:"swipe:right",hand:"right"}]},
+{id:"home",t:["Приложения и три кнопки","Apps and the three buttons"],s:["Что такое приложение, «Домой» и «Назад»","What an app is, Home and Back"],steps:[
+ {t:["Каждая картинка на экране — это приложение, то есть программа. У каждого своя работа: одно звонит, другое фотографирует, третье показывает видео. Откройте «Камеру».","Every picture on the screen is an app — a program. Each has one job: one makes calls, one takes photos, one shows videos. Open the Camera."],ok:"tap:app:camera",hl:"app:camera"},
+ {t:["Камера открылась. Приложение — как комната: вошли, сделали дело, вышли. Чтобы выйти, нажмите кружок «Домой».","The camera opened. An app is like a room: you walk in, do your thing, walk out. To leave, press the Home circle."],ok:"tap:nav:home",hl:"nav:home"},
+ {t:["Теперь откройте «Настройки».","Now open Settings."],ok:"tap:app:settings",hl:"app:settings"},
+ {t:["Нажмите «Bluetooth» в списке.","Touch Bluetooth in the list."],ok:"tap:set:bt",hl:"set:bt"},
+ {t:["Вы зашли на шаг глубже. Треугольник внизу — кнопка «Назад»: возвращает на один шаг. Нажмите её.","You went one step deeper. The triangle at the bottom is Back: it returns one step. Press it."],ok:"tap:nav:back",hl:"nav:back"},
+ {t:["Ещё раз «Назад» — и вы выйдете из настроек.","Press Back once more to leave Settings."],ok:"tap:nav:back",hl:"nav:back"},
+ {t:["Третья кнопка — квадрат. Она показывает приложения, которые вы недавно открывали. Нажмите её.","The third button is the square. It shows the apps you opened recently. Press it."],ok:"tap:nav:recents",hl:"nav:recents"},
+ {t:["Вот они. Приложения не нужно закрывать каждый раз, но можно: смахните карточку пальцем вверх.","Here they are. You don't have to close apps every time, but you can: flick a card upward."],ok:"swipe:up",hand:"up"},
+ {t:["Готово. Заблудились в телефоне? Всегда жмите кружок «Домой». Нажмите его сейчас.","Done. Lost somewhere in the phone? Always press the Home circle. Press it now."],ok:"tap:nav:home",hl:"nav:home"}]},
+{id:"shade",t:["Шторка: Wi-Fi и Bluetooth","The pull-down panel: Wi-Fi and Bluetooth"],s:["Интернет, наушники, фонарик, яркость","Internet, headphones, flashlight, brightness"],steps:[
+ {t:["Вверху экрана узкая полоска со значками. Коснитесь батарейки справа.","At the top of the screen is a thin strip of icons. Touch the battery on the right."],ok:"tap:st:battery",hl:"st:battery"},
+ {t:["Батарейка показывает заряд. Меньше 20% — ставьте на зарядку. Теперь коснитесь значка-веера рядом — это Wi-Fi.","The battery shows the charge. Below 20% — plug it in. Now touch the fan-shaped icon next to it — that's Wi-Fi."],ok:"tap:st:wifi",hl:"st:wifi"},
+ {t:["Wi-Fi — это интернет без проводов от домашней коробочки (роутера). Дома он бесплатный. На улице его нет — там интернет идёт через SIM-карту. Теперь проведите пальцем от самого верха экрана вниз.","Wi-Fi is wireless internet from the box at home (the router). At home it's free. Outside there's none — there the internet comes through the SIM card. Now slide your finger from the very top of the screen downward."],ok:"swipe:down:top",hand:"down"},
+ {t:["Это «шторка» с быстрыми кнопками. Синяя кнопка — включено, серая — выключено. Нажмите Wi-Fi, чтобы выключить его.","This is the pull-down panel with quick buttons. Blue means on, grey means off. Touch Wi-Fi to turn it off."],ok:"tap:qs:wifi",hl:"qs:wifi"},
+ {t:["Wi-Fi выключен — значок вверху пропал. Без него YouTube дома будет тратить платный интернет. Включите Wi-Fi обратно.","Wi-Fi is off — its icon at the top is gone. Without it, YouTube at home uses paid internet. Turn Wi-Fi back on."],ok:"tap:qs:wifi",hl:"qs:wifi"},
+ {t:["Теперь Bluetooth. Это невидимый «провод» длиной метров десять: соединяет телефон с наушниками, колонкой или машиной. Это НЕ интернет. Нажмите Bluetooth, чтобы включить.","Now Bluetooth. It's an invisible 'wire' about ten metres long: it links the phone to headphones, a speaker or the car. It is NOT internet. Touch Bluetooth to turn it on."],ok:"tap:qs:bt",hl:"qs:bt"},
+ {t:["Включён. Чтобы выбрать, к чему подключиться, нужно открыть его настройки. Вот здесь долгое нажатие как раз нужно: держите палец на Bluetooth.","It's on. To choose what to connect to, open its settings. This is where holding IS right: keep your finger on Bluetooth."],ok:"long:qs:bt",hl:"qs:bt"},
+ {t:["Телефон нашёл рядом «Наушники». Нажмите на них, чтобы подключить.","The phone found 'Headphones' nearby. Touch them to connect."],ok:"tap:bt:dev",hl:"bt:dev"},
+ {t:["Подключено! Звук теперь идёт в наушники. Если в телефоне вдруг пропал звук — проверьте, не подключён ли Bluetooth. Нажмите «Домой».","Connected! Sound now goes to the headphones. If the phone ever goes silent, check whether Bluetooth is connected to something. Press Home."],ok:"tap:nav:home",hl:"nav:home"},
+ {t:["Снова откройте шторку: проведите от самого верха вниз.","Open the panel again: slide down from the very top."],ok:"swipe:down:top",hand:"down"},
+ {t:["Нажмите «Фонарик».","Touch Flashlight."],ok:"tap:qs:torch",hl:"qs:torch"},
+ {t:["Светит! Выключите его тем же нажатием.","It's shining! Turn it off with the same touch."],ok:"tap:qs:torch",hl:"qs:torch"},
+ {t:["Полоска с солнышком — яркость экрана. Поставьте на неё палец и подвигайте влево-вправо.","The bar with the sun is screen brightness. Put your finger on it and slide left and right."],ok:"drag:bright",hl:"bright"},
+ {t:["Чтобы закрыть шторку, проведите пальцем снизу вверх.","To close the panel, slide your finger from the bottom up."],ok:"swipe:up",hand:"up"}]},
+{id:"calls",t:["Звонки","Phone calls"],s:["Позвонить, ответить, громкая связь","Call, answer, speaker"],steps:[
+ {t:["Откройте «Телефон».","Open Phone."],ok:"tap:app:phone",hl:"app:phone"},
+ {t:["Наберите любой номер: нажмите три цифры или больше.","Dial any number: press three digits or more."],ok:(e,s)=>e.startsWith("tap:key:")&&s.dial.length>=3,allow:["tap:key:"],hl:"keys"},
+ {t:["Теперь нажмите зелёную кнопку — пойдёт звонок.","Now press the green button to start the call."],ok:"tap:call:start",hl:"call:start"},
+ {t:["Идёт разговор. Важно: не нужно прижимать телефон ко рту и не нужно кричать — микрофон очень чуткий, говорите обычным голосом. Нажмите «Динамик».","You're on a call. Important: don't press the phone to your mouth and don't shout — the microphone is very sensitive, just talk normally. Press Speaker."],ok:"tap:call:speaker",hl:"call:speaker"},
+ {t:["Громкая связь включена. Теперь телефон можно держать перед собой на расстоянии ладони или положить на стол — вас хорошо слышно. Закончите разговор красной кнопкой.","Speaker is on. You can hold the phone a hand's length away or lay it on the table — they hear you fine. End the call with the red button."],ok:"tap:call:end",hl:"call:end"},
+ {t:["Вам звонят! Зелёная кнопка — ответить, красная — не отвечать. Ответьте.","Someone's calling you! Green — answer, red — don't answer. Answer it."],pre:s=>{s.app="phone";s.call={name:["Сын","Son"],state:"in"};},ok:"tap:call:answer",hl:"call:answer"},
+ {t:["Вы ответили. Поговорили — нажмите красную кнопку.","You answered. When you've finished talking, press the red button."],ok:"tap:call:end",hl:"call:end"},
+ {t:["Чтобы не набирать номер каждый раз, есть «Контакты» — список знакомых. Нажмите «Контакты» внизу.","So you don't dial a number every time, there are Contacts — a list of people you know. Press Contacts at the bottom."],ok:"tap:ph:contacts",hl:"ph:contacts"},
+ {t:["Нажмите на имя — телефон сам позвонит.","Touch a name — the phone calls it for you."],ok:"tap:contact:*",hl:"contact:0"},
+ {t:["Положите трубку красной кнопкой.","Hang up with the red button."],ok:"tap:call:end",hl:"call:end"}]},
+{id:"chat",t:["Сообщения","Messages"],s:["Написать, отправить, сказать голосом","Type, send, speak a message"],steps:[
+ {t:["Сообщения — это письменный разговор. WhatsApp устроен точно так же. Откройте «Сообщения».","Messages are a written conversation. WhatsApp works exactly the same way. Open Messages."],ok:"tap:app:chat",hl:"app:chat"},
+ {t:["Это список людей, с которыми вы переписываетесь. Нажмите на «Сын».","This is the list of people you chat with. Touch 'Son'."],ok:"tap:chat:son",hl:"chat:son"},
+ {t:["Чтобы написать, коснитесь белой строки внизу.","To write, touch the white line at the bottom."],ok:"tap:msg:field",hl:"msg:field"},
+ {t:["Появилась клавиатура. Напишите что-нибудь: нажмите хотя бы две буквы.","The keyboard appeared. Write something: press at least two letters."],ok:(e,s)=>e.startsWith("tap:kb:")&&s.typed.trim().length>=2,allow:["tap:kb:"],hl:"kbd"},
+ {t:["Теперь зелёная стрелка — отправить.","Now the green arrow — send."],ok:"tap:msg:send",hl:"msg:send"},
+ {t:["Отправлено! Можно и голосом. Держите палец на микрофоне и говорите обычным голосом, телефон — на расстоянии ладони от лица, не вплотную. Нажмите и держите микрофон.","Sent! You can also use your voice. Hold your finger on the microphone and talk normally, with the phone a hand's length from your face — not right up close. Press and hold the microphone."],ok:"long:msg:mic",hl:"msg:mic"},
+ {t:["Идёт запись… Отпустите палец — сообщение отправится.","Recording… Lift your finger and the message is sent."],ok:"up:msg:mic"},
+ {t:["Важно: если незнакомый человек пишет «вы выиграли», просит деньги или код из СМС — не отвечайте и ничего не нажимайте. Нажмите «Назад».","Important: if a stranger writes 'you won', asks for money or for a code from a text message — don't reply and don't touch anything. Press Back."],ok:"tap:nav:back",hl:"nav:back"},
+ {t:["И «Домой».","And Home."],ok:"tap:nav:home",hl:"nav:home"}]},
+{id:"mail",t:["Почта (Gmail)","Email (Gmail)"],s:["Прочитать письмо, узнать обман","Read a letter, spot a scam"],steps:[
+ {t:["Электронная почта — это письма через интернет. У каждого человека свой адрес со значком @. Gmail — почта от Google. Откройте «Почту».","Email is letters over the internet. Everyone has their own address with an @ sign. Gmail is Google's email. Open Mail."],ok:"tap:app:mail",hl:"app:mail"},
+ {t:["Это «Входящие» — письма, которые прислали вам. Жирным — ещё не прочитанные. Откройте письмо от поликлиники.","This is the Inbox — letters sent to you. Bold ones are unread. Open the letter from the clinic."],ok:"tap:mail:0",hl:"mail:0"},
+ {t:["Письмо открылось. Прочитали — нажмите «Назад».","The letter opened. When you've read it, press Back."],ok:"tap:nav:back",hl:"nav:back"},
+ {t:["Теперь письмо «Вы выиграли 1 000 000». Это обман. Откройте его — здесь это безопасно.","Now the letter 'You won 1,000,000'. It's a scam. Open it — here that's safe."],ok:"tap:mail:1",hl:"mail:1"},
+ {t:["Мошенники пишут про выигрыши, посылки и «блокировку банка». В настоящем телефоне никогда не нажимайте на ссылки в таких письмах. Удалите его: нажмите корзину.","Scammers write about prizes, parcels and 'your bank is blocked'. On a real phone never touch the links in letters like this. Delete it: press the bin."],ok:"tap:mail:del",hl:"mail:del",bad:{"tap:mail:link":["Вот на такие ссылки нажимать нельзя. Нажмите корзину.","That's exactly the kind of link you must not touch. Press the bin."]}},
+ {t:["Письмо удалено. Нажмите «Домой».","The letter is deleted. Press Home."],ok:"tap:nav:home",hl:"nav:home"}]},
+{id:"video",t:["YouTube","YouTube"],s:["Найти видео, пауза, реклама, громкость","Find a video, pause, ads, volume"],steps:[
+ {t:["YouTube — огромная бесплатная библиотека видео: песни, фильмы, новости, рецепты, ремонт. Откройте его.","YouTube is a huge free library of videos: songs, films, news, recipes, repairs. Open it."],ok:"tap:app:video",hl:"app:video"},
+ {t:["Нажмите на строку поиска вверху, где лупа.","Touch the search line at the top, with the magnifying glass."],ok:"tap:yt:search",hl:"yt:search"},
+ {t:["Обычно здесь пишут, что хотят найти. Сейчас просто выберите готовую подсказку.","Normally you type what you want to find here. For now just pick one of the suggestions."],ok:"tap:yt:q:*",hl:"yt:q:0"},
+ {t:["Вот найденные видео. Нажмите на любое.","Here are the videos it found. Touch any one."],ok:"tap:yt:v:*",hl:"yt:v:0"},
+ {t:["Сначала часто показывают рекламу. На саму рекламу не нажимайте — нажмите «Пропустить».","Often an advert plays first. Don't touch the advert itself — press Skip."],ok:"tap:yt:skip",hl:"yt:skip",bad:{"tap:yt:ad":["Это реклама — на неё не нажимаем. Нажмите «Пропустить» в углу.","That's the advert — we don't touch it. Press Skip in the corner."]}},
+ {t:["Видео идёт. Коснитесь видео, чтобы остановить его.","The video is playing. Touch the video to pause it."],ok:"tap:yt:toggle",hl:"yt:toggle"},
+ {t:["Пауза. Коснитесь ещё раз, чтобы продолжить.","Paused. Touch again to continue."],ok:"tap:yt:toggle",hl:"yt:toggle"},
+ {t:["Громкость меняют настоящими кнопками сбоку телефона. Нажмите верхнюю кнопку справа — «громче».","Volume is changed with the real buttons on the side of the phone. Press the top button on the right — louder."],ok:"tap:hw:volup",hl:"hw:volup"},
+ {t:["Нажмите «Домой» — видео остановится.","Press Home — the video stops."],ok:"tap:nav:home",hl:"nav:home"}]},
+{id:"camera",t:["Камера и фотографии","Camera and photos"],s:["Снять фото и найти его потом","Take a photo and find it later"],steps:[
+ {t:["Откройте «Камеру».","Open the Camera."],ok:"tap:app:camera",hl:"app:camera"},
+ {t:["Большой белый круг — сделать снимок. Держите телефон ровно и нажмите на круг.","The big white circle takes the picture. Hold the phone steady and press the circle."],ok:"tap:cam:shot",hl:"cam:shot"},
+ {t:["Снято! Круглые стрелки переключают на переднюю камеру — она смотрит на вас. Нажмите их.","Got it! The round arrows switch to the front camera — the one looking at you. Press them."],ok:"tap:cam:flip",hl:"cam:flip"},
+ {t:["Теперь вы видите себя. Так же работают видеозвонки. Сделайте снимок.","Now you see yourself. Video calls work the same way. Take a picture."],ok:"tap:cam:shot",hl:"cam:shot"},
+ {t:["Маленькая картинка в углу — ваши снимки. Нажмите на неё.","The small picture in the corner is your photos. Touch it."],ok:"tap:cam:gallery",hl:"cam:gallery"},
+ {t:["Это «Галерея» — здесь лежат все ваши фото. Нажмите на любое, чтобы увидеть его крупно.","This is the Gallery — all your photos live here. Touch any one to see it large."],ok:"tap:gal:*",hl:"gal:0"},
+ {t:["Нажмите «Домой».","Press Home."],ok:"tap:nav:home",hl:"nav:home"}]},
+{id:"buttons",t:["Кнопки сбоку телефона","The buttons on the side"],s:["Экран, блокировка, громкость, перезагрузка","Screen, lock, volume, restart"],steps:[
+ {t:["Справа на телефоне настоящие кнопки. Оранжевая — питание. Нажмите её коротко.","On the right side of the phone are real buttons. The orange one is power. Press it briefly."],ok:"tap:hw:power",hl:"hw:power"},
+ {t:["Экран погас. Телефон не выключился — он «спит» и звонки принимает. Нажмите кнопку ещё раз.","The screen went dark. The phone isn't off — it's asleep and still receives calls. Press the button again."],ok:"tap:hw:power",hl:"hw:power"},
+ {t:["Это экран блокировки. Проведите пальцем снизу вверх, чтобы открыть телефон.","This is the lock screen. Slide your finger from the bottom up to open the phone."],ok:"swipe:up",hand:"up"},
+ {t:["Две кнопки выше — громкость. Нажмите верхнюю: «громче».","The two buttons above are volume. Press the top one: louder."],ok:"tap:hw:volup",hl:"hw:volup"},
+ {t:["А теперь нижнюю: «тише».","And now the lower one: quieter."],ok:"tap:hw:voldown",hl:"hw:voldown"},
+ {t:["Если кнопку питания ДЕРЖАТЬ, появится меню выключения. Подержите её.","If you HOLD the power button, the power menu appears. Hold it."],ok:"long:hw:power",hl:"hw:power"},
+ {t:["Если телефон «глючит» или завис — перезагрузка помогает чаще всего. Нажмите «Перезагрузить».","If the phone acts strange or freezes, restarting fixes it most of the time. Press Restart."],ok:"tap:pw:restart",hl:"pw:restart"}]},
+{id:"safety",t:["Интернет и безопасность","Internet and safety"],s:["Поиск и как не попасться мошенникам","Searching, and not getting tricked"],steps:[
+ {t:["«Интернет» (на телефоне он называется Chrome) — окно в мир: можно найти погоду, новости, расписание, что угодно. Откройте его.","Internet (on the phone it's called Chrome) is a window to the world: weather, news, timetables, anything. Open it."],ok:"tap:app:web",hl:"app:web"},
+ {t:["Нажмите на строку поиска.","Touch the search line."],ok:"tap:web:search",hl:"web:search"},
+ {t:["Выберите «погода на завтра».","Choose 'weather tomorrow'."],ok:"tap:web:q",hl:"web:q"},
+ {t:["Стоп! Такие окна — обман. Телефон НЕ заражён. Большую красную кнопку нажимать нельзя. Нажмите маленький крестик в углу или кнопку «Назад».","Stop! Windows like this are a trick. The phone is NOT infected. Never press the big red button. Press the small cross in the corner, or the Back button."],
+  pre:s=>{s.app="web";s.view="result";s.popup=true;},ok:["tap:popup:x","tap:nav:back"],hl:"popup:x",bad:{"tap:popup:ok":["Нет! Именно эту кнопку нажимать нельзя. Ищите маленький крестик в углу.","No! That is exactly the button you must not press. Look for the small cross in the corner."]}},
+ {t:["Правильно! Три правила: 1) никому не говорите коды из СМС; 2) банк никогда не просит пароль по телефону; 3) сомневаетесь — ничего не нажимайте и позвоните сыну. Нажмите «Домой».","Correct! Three rules: 1) never tell anyone a code from a text message; 2) a bank never asks for your password by phone; 3) if in doubt — touch nothing and call your son. Press Home."],ok:"tap:nav:home",hl:"nav:home"}]}
+];
+if(typeof module!=="undefined")module.exports={LESSONS,UI,NAMES,EXPL};
