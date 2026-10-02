@@ -1593,6 +1593,8 @@ function addItem(m){
   const now=Date.now();
   const it={id:id(),title:m.title,type:m.type||"Anime",status:m.type==="Movie"&&addAs==="watching"?"completed":addAs,score:null,note:"",
     total:m.total||null,w:"",cover:m.cover||null,mal:m.mal||null,ani:m.ani||null,aniTried:true,addedAt:now,startedAt:addAs==="watching"?now:null,completedAt:null,updatedAt:now};
+  if(m.alt)it.alt=m.alt;
+  if(it.type==="Manga")setTimeout(()=>refreshChapters(true),200);
   if(it.status==="completed"){it.completedAt=now;if(it.total){const s=new Set();for(let n=1;n<=it.total;n++)s.add(n);it.w=fmtW(s);}}
   it.malTried=!!it.cover;
   state.items.push(it);save();
@@ -2178,15 +2180,42 @@ async function chLoad(it){
   it.ch={n,t,gap,done:!!s.completed,src,at:Date.now()};
   if(s.completed&&!it.total)it.total=n;
 }
+/* The website can't ask MangaUpdates itself, so it reads an index of latest chapters that GitHub rebuilds every hour. */
+const CH_INDEX="https://raw.githubusercontent.com/ProBro321/App/data/chapters.json";let chIdx=null,chIdxAt=0;
+const tkey=t=>norm(t).replace(/^the/,"");
+async function loadChIndex(){
+  if(chIdx&&Date.now()-chIdxAt<20*60000)return chIdx;
+  const r=await fetch(CH_INDEX,{cache:"no-cache"});if(!r.ok)throw new Error("index "+r.status);const j=await r.json();
+  const byId=new Map(),byT=new Map();
+  (j.s||[]).forEach(e=>{byId.set(String(e.i),e);const k=tkey(e.t);if(k&&(!byT.has(k)||byT.get(k).d<e.d))byT.set(k,e);});
+  chIdx={byId,byT};chIdxAt=Date.now();return chIdx;
+}
+function chFromIndex(it,ix){
+  let e=it.mu?ix.byId.get(String(it.mu)):null;
+  if(!e)for(const q of [it.title,it.alt]){if(q&&(e=ix.byT.get(tkey(q))))break;}
+  if(!e)return false;
+  const asura=e.a>0,n=asura?e.a:e.n,d=asura?e.ad:e.d,ds=(asura?e.as:e.ds)||[];let gap=0;
+  if(ds.length>=3){const g=[];for(let i=0;i<ds.length-1;i++)g.push((Date.parse(ds[i])-Date.parse(ds[i+1]))/864e5);g.sort((a,b)=>a-b);gap=Math.max(1,Math.round(g[Math.floor(g.length/2)]));}
+  const t=Date.parse(d+"T12:00:00Z")/1000||0,c=it.ch;
+  if(c&&c.n>=n&&(c.n>n||(c.t===t&&c.gap===gap))){if(!it.mu){it.mu=e.i;return true;}return false;}
+  it.mu=it.mu||e.i;it.ch={n,t,gap,done:!!(c&&c.done&&c.n>=n),src:asura?"Asura":"",at:Date.now()};return true;
+}
+async function refreshFromIndex(){
+  if(chBusy||!navigator.onLine)return;chBusy=true;
+  try{const ix=await loadChIndex();let did=0;state.items.filter(chTracked).forEach(it=>{if(chFromIndex(it,ix))did++;});
+    if(did){save();if(view==="list")renderList();else updateBell();if(detailId)renderDetail();}}catch(e){}
+  chBusy=false;
+}
 async function refreshChapters(force){
-  if(chBusy||!navigator.onLine||(!muNative()&&muDead))return;
+  if(!muNative())return refreshFromIndex();
+  if(chBusy||!navigator.onLine)return;
   const now=Date.now(),stale=force?5*60000:3*3600000;
   const items=state.items.filter(chTracked).filter(it=>!it.ch||now-(it.ch.at||0)>stale).sort((a,b)=>((a.ch&&a.ch.at)||0)-((b.ch&&b.ch.at)||0)).slice(0,30);
   if(!items.length){syncNative();return;}
   chBusy=true;let did=0;
   for(const it of items){
     try{
-      if(!it.mu){if(it.muTried&&!force)continue;it.muTried=true;it.mu=await muFind(it);if(!it.mu){save();continue;}}
+      if(!it.mu){if(it.muTried&&!force)continue;it.muTried=true;it.mu=await muFind(it);if(!it.mu){try{if(chFromIndex(it,await loadChIndex()))did++;}catch(e){}save();continue;}}
       await chLoad(it);did++;save();
     }catch(e){if(muDead)break;}
   }
@@ -2275,6 +2304,7 @@ function applyCloud(str){
   lastTop=JSON.stringify(state.top);
   if(detailId&&!byId(detailId))closeDetail();
   render();
+  if(state.items.some(it=>chTracked(it)&&!it.ch))setTimeout(()=>refreshChapters(),500);
   if(!syncManual)toast("Updated from your other device ✓");
 }
 const PTR=$("ptr"),PTRC=PTR.querySelector("circle");
