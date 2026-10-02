@@ -809,6 +809,8 @@ en:{
   installDone:"✓ All paid",installFinished:n=>`${n} is fully paid 🎉`,swipeEdit:"Edit",swipeDelete:"Delete",
   startBalance:"Starting balance",
   csvHead:["Date","Time","Type","Category","Reason","Card","Amount (ILS)"],csvInc:"Income",csvExp:"Expense",
+  billDupQ:(n,x,d)=>`${n} is due — but you already typed in ${x} yourself (${d}).\n\nIs that this month's payment?\n\nOK = yes, don't add it again\nCancel = no, add the bill too`,
+  billSkipped:n=>`${n}: already logged by you — not added twice`,
   howPay:"How do you pay?",payCash:"💵 Cash only",payCard:"💳 Credit card too",
   cashOnlyS:"💵 Cash only (no credit card)",cashOnlyMini:"Turn on if you don't use a credit card — the app gets simpler.",
   incomeIn:m=>`Received in ${m}`,incomeSub:"pension, salary and other income",
@@ -885,6 +887,8 @@ he:{
   installDone:"✓ שולם במלואו",installFinished:n=>`${n} שולם במלואו 🎉`,swipeEdit:"עריכה",swipeDelete:"מחיקה",
   startBalance:"יתרת פתיחה",
   csvHead:["תאריך","שעה","סוג","קטגוריה","סיבה","כרטיס","סכום (₪)"],csvInc:"הכנסה",csvExp:"הוצאה",
+  billDupQ:(n,x,d)=>`הגיע מועד ${n} — אבל כבר רשמת ${x} בעצמך (${d}).\n\nזה התשלום של החודש?\n\nאישור = כן, לא להוסיף שוב\nביטול = לא, להוסיף גם את החיוב`,
+  billSkipped:n=>`${n}: כבר נרשם על ידך — לא נוסף פעמיים`,
   howPay:"איך משלמים?",payCash:"💵 רק מזומן",payCard:"💳 גם כרטיס אשראי",
   cashOnlyS:"💵 רק מזומן (בלי כרטיס אשראי)",cashOnlyMini:"הפעילו אם אין כרטיס אשראי — האפליקציה תהיה פשוטה יותר.",
   incomeIn:m=>`התקבל ב${m}`,incomeSub:"פנסיה, משכורת והכנסות אחרות",
@@ -961,6 +965,8 @@ ru:{
   installDone:"✓ Всё оплачено",installFinished:n=>`${n} полностью оплачено 🎉`,swipeEdit:"Исправить",swipeDelete:"Удалить",
   startBalance:"Начальная сумма",
   csvHead:["Дата","Время","Тип","Категория","Описание","Карта","Сумма (₪)"],csvInc:"Доход",csvExp:"Расход",
+  billDupQ:(n,x,d)=>`Пора платить «${n}» — но вы уже сами записали ${x} (${d}).\n\nЭто платёж за этот месяц?\n\nОК = да, не добавлять ещё раз\nОтмена = нет, добавить и платёж`,
+  billSkipped:n=>`${n}: уже записано вами — второй раз не добавлено`,
   howPay:"Как вы платите?",payCash:"💵 Только наличные",payCard:"💳 Есть кредитная карта",
   cashOnlyS:"💵 Только наличные (без кредитной карты)",cashOnlyMini:"Включите, если у вас нет кредитной карты — приложение станет проще.",
   incomeIn:m=>`Получено: ${m}`,incomeSub:"пенсия, зарплата и другие доходы",
@@ -1025,6 +1031,21 @@ function normalize(s){
 }
 let state=null;
 state=load();
+/* One-time repair agreed with the owner on 2 Oct 2026 (audit against the bank):
+   remove the phone installment that was charged twice on 30 Jul, mark the installment as 4 of 6 paid,
+   and add one correction so the balance equals the bank. Only touches the wallet that contains these exact rows. */
+(function(){
+  const START="0w1tyein1t9dmq448a3c",DUP="yn2w9ckn78ms73do9c",BILL="jvniksbl7vmq448a3b",FIX="fix-2026-10-02-bank";
+  if(!state.tx.some(x=>x.id===START))return;
+  state.fixes=state.fixes||{};
+  if(state.fixes[FIX]||state.tx.some(x=>x.id===FIX)){state.fixes[FIX]=true;return;}
+  state.tx=state.tx.filter(x=>x.id!==DUP);
+  const b=state.fixedBills.find(x=>x.id===BILL);if(b&&!b.payments){b.payments=6;b.paid=4;}
+  state.tx.push({id:FIX,cat:"Other",amount:549.56,type:"income",note:"Correction to match bank (2 Oct)",cardId:null,auto:false,ts:Date.now()});
+  state.fixes[FIX]=true;
+  try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
+  window.__fixMsg="Fixed: removed the double ₪675 and matched your bank ✓";
+})();
 function load(){
   try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.tx&&s.cards)return normalize(s);}catch(e){}
   const s=normalize(migrateFromV1()||seed());
@@ -1099,23 +1120,47 @@ function cardPace(card){
 function billMonthKey(d){return d.getFullYear()+"-"+(d.getMonth()+1);}
 function billDone(b){return b.payments>0&&b.paid>=b.payments;}
 function countPayment(b,finished){if(b.payments>0){b.paid=(b.paid||0)+1;if(b.paid>=b.payments)finished.push(b);}}
+/* Safety net against paying a bill twice in the app:
+   an expense the user typed in by hand this month, for exactly the bill's amount, that looks like the same thing. */
+function manualBillMatch(b){
+  const now=new Date(),mk=calMonthKey(now.getTime());
+  const words=[b.name,b.note].filter(Boolean).map(w=>String(w).toLowerCase().trim()).filter(w=>w.length>2);
+  return state.tx.find(x=>{
+    if(x.type!=="expense"||x.auto||x.billMatch||calMonthKey(x.ts)!==mk)return false;
+    if(Math.abs(x.amount-(+b.amount||0))>0.005)return false;
+    const note=String(x.note||"").toLowerCase();
+    return x.cat===b.cat||words.some(w=>note.includes(w))||(!note&&x.amount>=100);
+  });
+}
+// true = the user says that manual entry IS this month's bill, so don't add it again
+function billAlreadyLogged(b){
+  const m=manualBillMatch(b);if(!m)return false;
+  if(!confirm(t("billDupQ",b.name||t("newBill"),"₪"+fmt(+b.amount||0),dayLabel(m.ts))))return false;
+  m.billMatch=b.id;return true;
+}
 function autoApplyBills(){
   if(!state.setup)return;
-  const now=new Date();const mk=billMonthKey(now);let applied=[],finished=[];
+  const now=new Date();const mk=billMonthKey(now);let applied=[],finished=[],skipped=[],changed=false;
   state.fixedBills.forEach(b=>{
     if(!b.day||!(+b.amount>0)||billDone(b))return;
     const bd=dayIn(now.getFullYear(),now.getMonth(),b.day);
     if(now.getDate()>=bd && state.billRuns[b.id]!==mk){
       const due=new Date(now.getFullYear(),now.getMonth(),bd,12,0,0).getTime();
+      // a bill added after its day already passed starts next month — it never charges backwards
+      if(b.since&&due<startOfDay(b.since)){state.billRuns[b.id]=mk;changed=true;return;}
+      if(billAlreadyLogged(b)){state.billRuns[b.id]=mk;countPayment(b,finished);skipped.push(b);changed=true;return;}
       state.tx.push({id:id(),cat:b.cat,amount:+b.amount||0,type:"expense",note:b.note||b.name,
         cardId:!state.cashOnly&&cardById(b.cardId)?b.cardId:null,auto:true,ts:Math.min(due,Date.now())});
       state.billRuns[b.id]=mk;applied.push(b);countPayment(b,finished);
     }
   });
-  if(applied.length){
+  if(applied.length||changed){
     save();renderEverything();
-    toast(t("billsAdded",applied.length,cur(applied.reduce((a,x)=>a+(+x.amount||0),0)))+
-      (finished.length?"\n"+finished.map(b=>t("installFinished",b.name)).join("\n"):""));
+    const lines=[];
+    if(applied.length)lines.push(t("billsAdded",applied.length,cur(applied.reduce((a,x)=>a+(+x.amount||0),0))));
+    skipped.forEach(b=>lines.push(t("billSkipped",b.name||t("newBill"))));
+    finished.forEach(b=>lines.push(t("installFinished",b.name)));
+    if(lines.length)toast(lines.join("\n"));
   }
 }
 function upcomingBills(){
@@ -1845,7 +1890,7 @@ function renderBillEditor(){
     w.appendChild(row);
   });
 }
-$("addBill").onclick=()=>{state.fixedBills.push({id:id(),name:t("newBill"),cat:"Other",amount:0,note:"",day:1,cardId:state.cashOnly?null:state.cards[0].id});save();renderBillEditor();};
+$("addBill").onclick=()=>{state.fixedBills.push({id:id(),name:t("newBill"),cat:"Other",amount:0,note:"",day:1,cardId:state.cashOnly?null:state.cards[0].id,since:Date.now()});save();renderBillEditor();};
 $("loadFixed").onclick=()=>{
   const due=state.fixedBills.filter(b=>(+b.amount||0)>0&&!billDone(b)&&state.billRuns[b.id]!==billMonthKey(new Date()));
   if(!due.length){toast(t("allApplied"));return;}
@@ -1853,6 +1898,7 @@ $("loadFixed").onclick=()=>{
   if(!confirm(t("confirmApply",due.length,"₪"+fmt(sum))))return;
   const now=Date.now(),mk=billMonthKey(new Date());
   due.forEach(b=>{
+    if(billAlreadyLogged(b)){state.billRuns[b.id]=mk;countPayment(b,[]);return;}
     state.tx.push({id:id(),cat:b.cat,amount:+b.amount||0,type:"expense",note:b.note||b.name,cardId:!state.cashOnly&&cardById(b.cardId)?b.cardId:null,auto:false,ts:now});
     state.billRuns[b.id]=mk;countPayment(b,[]);
   });
@@ -1993,6 +2039,7 @@ viewCard=state.cards[0].id;
 applyStatic();
 applyCashMode();
 renderHome();
+if(window.__fixMsg){setTimeout(()=>{toast(window.__fixMsg);if(window.Cloud)Cloud.changed();},3000);}
 showSetupIfNeeded();
 autoApplyBills();
 setInterval(autoApplyBills,60000);
