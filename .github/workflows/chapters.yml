@@ -1,0 +1,37 @@
+name: Chapter index
+# Every hour: read the public list of newly released manga / manhwa chapters and save a small index
+# on the "data" branch. The Anime List page reads it to know the latest chapter of each series.
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["tools/chapters.py", ".github/workflows/chapters.yml"]
+permissions:
+  contents: write
+concurrency:
+  group: chapters
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get the previous index
+        run: |
+          git fetch origin data:data 2>/dev/null && git show data:chapters.json > chapters.json || echo "first run"
+      - name: Update the index
+        run: python3 tools/chapters.py chapters.json
+      - name: Save it on the data branch
+        run: |
+          cp chapters.json /tmp/chapters.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan data-new
+          git rm -rfq . || true
+          cp /tmp/chapters.json chapters.json
+          git add chapters.json
+          git commit -qm "Chapter index $(date -u +%FT%TZ)"
+          git push -f origin data-new:data
