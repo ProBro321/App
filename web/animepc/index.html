@@ -1058,6 +1058,7 @@ function row(it,fromPct){
     prog=`<div class="prog">${T?`<div class="pbar"><i style="width:${fromPct!=null?fromPct:pct}%" data-to="${pct}"></i></div>`:""}
       <div class="ptxt num">${txt}${p.gap?` · <span class="warn">⚠ skipped ${unit(it.type).toLowerCase()} ${p.gap}</span>`:""}</div>${airTag(it)}</div>`;
   }
+  const notOut=it.type==="Manga"&&it.ch&&it.ch.n&&p.next>it.ch.n; // caught up: nothing new to tick
   const inTop=state.top.indexOf(it.id);
   r.innerHTML=`${coverHtml(it)}
     <div class="rmid">
@@ -1065,9 +1066,9 @@ function row(it,fromPct){
       <div class="rsub"><span class="dot" style="background:${st.c}"></span>${stLabel(it.status,it.type)} · ${it.type}${it.score?` · <span class="star">★ ${it.score}</span>`:""}</div>
       ${prog}
     </div>
-    ${(it.status==="watching"||it.status==="plan")&&it.type!=="Movie"&&p.next?`<button class="plus1">+1 ${unit(it.type)}</button>`:""}`;
+    ${(it.status==="watching"||it.status==="plan")&&it.type!=="Movie"&&p.next&&!notOut?`<button class="plus1">+1 ${unit(it.type)}</button>`:""}`;
   const wrap=document.createElement("div");wrap.className="swipe";
-  const canPlus=(it.status==="watching"||it.status==="plan")&&it.type!=="Movie"&&p.next;
+  const canPlus=(it.status==="watching"||it.status==="plan")&&it.type!=="Movie"&&p.next&&!notOut;
   wrap.innerHTML=canPlus?`<div class="sbg">+1 ${unit(it.type)} ${p.next} ✓</div>`:"";
   wrap.appendChild(r);
   r.onclick=()=>{if(wrap._sw){wrap._sw=false;return;}openDetail(it.id);};
@@ -1095,10 +1096,10 @@ function attachSwipe(wrap,r,onRight){
 }
 function plusOne(it,force){
   const p=progress(it);if(!p.next)return;
-  const aired=it.type==="Anime"&&it.air&&it.air.st!=="FINISHED"?airedNow(it):null;
+  const aired=it.type==="Anime"&&it.air&&it.air.st!=="FINISHED"?airedNow(it):it.type==="Manga"?airedNow(it):null;
   if(!force&&aired!=null&&p.next>aired){
-    const at=airAt(it,p.next);
-    toast(`Ep ${p.next} hasn't aired yet${at?" — "+inTxt(at):""}`,{label:"Tick anyway",fn:()=>plusOne(it,true)});return;
+    const at=it.type==="Manga"?(p.next===aired+1?chNext(it):null):airAt(it,p.next);
+    toast(it.type==="Manga"?`Ch ${p.next} isn't out yet${at?" — expected "+inTxt(at):""}`:`Ep ${p.next} hasn't aired yet${at?" — "+inTxt(at):""}`,{label:"Tick anyway",fn:()=>plusOne(it,true)});return;
   }
   const oldPct=it.total?Math.min(100,p.done/it.total*100):null;
   const set=p.set;set.add(p.next);it.w=fmtW(set);
@@ -1192,7 +1193,8 @@ function renderEpisodes(it){
   $("dEpSum").innerHTML=p.gap?`<span class="warn">⚠ You skipped ${U.toLowerCase()} ${p.gap}</span> — you've watched up to ${p.max}.`
     :p.next?(p.done?`Next up: <b style="color:var(--text)">${U.toLowerCase()} ${p.next}</b>`:`Tap an ${U==="Ep"?"episode":"chapter"} to tick it.`)
     :it.total?`All ${it.total} done ✓`:"";
-  const aired=it.type==="Anime"?airedNow(it):null,nx=it.type==="Anime"?airNext(it):null;
+  const isM=it.type==="Manga",chAt=isM?chNext(it):null;
+  const aired=airedNow(it),nx=isM?(chAt?{ep:aired+1,at:chAt}:null):airNext(it);
   if(it.air&&it.type==="Anime"){
     let line="";
     const nc=newCount(it);
@@ -1214,17 +1216,17 @@ function renderEpisodes(it){
   const g=$("dGrid");g.innerHTML="";
   for(let n=epPage*per+1;n<=Math.min(count,(epPage+1)*per);n++){
     const b=document.createElement("button");
-    const unaired=aired!=null&&n>aired&&!p.set.has(n)&&it.air.st!=="FINISHED";
+    const unaired=aired!=null&&n>aired&&!p.set.has(n)&&(isM||(it.air&&it.air.st!=="FINISHED"));
     b.className="ep num"+(p.set.has(n)?" on":unaired?" na"+(nx&&n===nx.ep?" soon":""):n===p.gap?" gap":n===p.next?" next":"");
-    if(unaired){const at=airAt(it,n);b.innerHTML=`${n}<small>${at?(nx&&n===nx.ep?inTxt(at).replace("in ",""):shortDay(at)):"TBA"}</small>`;}
+    if(unaired){const at=isM?(nx&&n===nx.ep?nx.at:null):airAt(it,n);b.innerHTML=`${n}<small>${at?(nx&&n===nx.ep?inTxt(at).replace("in ",""):shortDay(at)):"TBA"}</small>`;}
     else b.textContent=n;
     b.onclick=()=>{
       if(unaired&&!upToMode&&b.dataset.ok!=="1"){
-        const at=airAt(it,n);b.dataset.ok="1";setTimeout(()=>{b.dataset.ok="";},3000);
-        toast(`Ep ${n} hasn't aired yet${at?" — "+whenTxt(at):""}. Tap again to tick anyway.`);return;
+        const at=isM?null:airAt(it,n);b.dataset.ok="1";setTimeout(()=>{b.dataset.ok="";},3000);
+        toast(isM?`Ch ${n} isn't out yet. Tap again to tick anyway.`:`Ep ${n} hasn't aired yet${at?" — "+whenTxt(at):""}. Tap again to tick anyway.`);return;
       }
       const set=progress(it).set;
-      if(upToMode){for(let k=1;k<=n;k++)set.add(k);}
+      if(upToMode){const cap=isM&&aired?Math.max(aired,progress(it).max):n;for(let k=1;k<=Math.min(n,cap);k++)set.add(k);if(n>cap)toast(`Ticked up to Ch ${cap} — the rest isn't out yet`);}
       else if(set.has(n))set.delete(n);else set.add(n);
       it.w=fmtW(set);
       if(it.status==="plan"&&set.size){it.status="watching";it.startedAt=it.startedAt||Date.now();}
