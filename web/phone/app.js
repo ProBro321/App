@@ -20,6 +20,7 @@ const IC={
   clock:S('<circle cx="12" cy="12" r="8.500"/><path d="M12 7v5l3.500 2"/>'),
   cal:S('<rect x="4" y="5.500" width="16" height="14.500" rx="2.500"/><path d="M4 10h16M8.500 3.500v4M15.500 3.500v4"/>'),
   notes:S('<path d="M6 3.500h9l3.500 3.500v13.500H6z"/><path d="M9 11h6M9 15h6"/>'),
+  weather:S('<circle cx="9" cy="9" r="3.500"/><path d="M9 2.500v1.500M3 9h1.500M4.500 4.500l1 1M13.500 4.500l-1 1"/><path d="M8 19.500h9a3.500 3.500 0 0 0 0-7 5 5 0 0 0-9.500 1.500A3 3 0 0 0 8 19.500z" fill="currentColor"/>'),
   store:S('<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6.500a3 3 0 0 1 6 0V8"/>'),
   wifi:S('<path d="M3 9.500a13 13 0 0 1 18 0M6 13a8.500 8.500 0 0 1 12 0M9 16.500a4.200 4.200 0 0 1 6 0"/><circle cx="12" cy="19.500" r="1" fill="currentColor"/>'),
   bt:S('<path d="M7 7.500l10 9-5 4.500V3l5 4.500-10 9"/>'),
@@ -39,14 +40,14 @@ const IC={
   flip:S('<path d="M4.500 12a7.500 7.500 0 0 1 13-5l2 2M19.500 12a7.500 7.500 0 0 1-13 5l-2-2"/><path d="M19.500 4.500V9H15M4.500 19.500V15H9"/>'),
   play:S('<path d="M8 5v14l11-7z" fill="currentColor"/>'),pause:S('<path d="M8 5v14M16 5v14" stroke-width="3.500"/>')
 };
-const COL={phone:"#22b45a",chat:"#1fa855",web:"#2f7df6",camera:"#444a5a",mail:"#e8eefc",video:"#b3261e",gallery:"#f08a24",settings:"#6b7280",calc:"#0f766e",clock:"#3b3f52",cal:"#2563eb",notes:"#eab308",store:"#7c3aed"};
+const COL={phone:"#22b45a",chat:"#1fa855",web:"#2f7df6",camera:"#444a5a",mail:"#e8eefc",video:"#b3261e",gallery:"#f08a24",settings:"#6b7280",calc:"#0f766e",clock:"#3b3f52",cal:"#2563eb",notes:"#eab308",store:"#7c3aed",weather:"#0ea5e9"};
 const PAGES=[["mail","video","gallery","settings"],["calc","clock","cal","notes","store"]],DOCK=["phone","chat","web","camera"];
 
 /* ---------- the practice phone ---------- */
 let sim;
 function fresh(){return {page:0,app:null,view:null,shade:false,wifi:true,bt:false,btDev:false,torch:false,data:true,plane:false,silent:false,bright:100,menu:null,locked:false,off:false,boot:false,pmenu:false,
-  vol:6,volShow:false,call:null,dial:"",typed:"",kb:false,chatOpen:false,msgs:[],rec:false,mail:null,mailGone:false,yt:{v:"home",play:false,ad:false},cam:{front:false,shots:0,flash:0},gal:null,popup:false,recents:false,opened:[]};}
-const appIcon=(id,ev=true)=>`<div class="app"${ev?` data-ev="app:${id}"`:""}><div class="ic" style="background:${COL[id]};color:${id==="mail"?"#d93025":"#fff"}">${IC[id]}</div>${esc(tr(NAMES[id]))}</div>`;
+  vol:6,volShow:false,notif:[],banner:null,installed:false,inst:0,call:null,dial:"",typed:"",kb:false,chatOpen:false,msgs:[],rec:false,mail:null,mailGone:false,yt:{v:"home",play:false,ad:false},cam:{front:false,shots:0,flash:0},gal:null,popup:false,recents:false,opened:[]};}
+const appIcon=(id,ev=true)=>`<div class="app"${ev?` data-ev="app:${id}"`:""}><div class="ic" style="background:${COL[id]};color:${id==="mail"?"#d93025":"#fff"}">${IC[id]}${ev&&id==="chat"&&sim.notif.some(n=>n.app==="chat")?`<span class="badge">1</span>`:""}</div>${esc(tr(NAMES[id]))}</div>`;
 function statusBar(dark){return `<div class="sb" style="${dark?"color:#222":""}"><span data-ev="st:time">12:30</span><span class="r"><span data-ev="st:signal">${IC.signal}</span>${sim.bt?`<span>${IC.bt}</span>`:""}${sim.wifi?`<span data-ev="st:wifi">${IC.wifi}</span>`:""}<span data-ev="st:battery">${IC.battery}</span></span></div>`;}
 function navBar(){return `<div class="nav"><div data-ev="nav:recents">${IC.recents}</div><div data-ev="nav:home">${IC.home}</div><div data-ev="nav:back">${IC.back}</div></div>`;}
 const KB=[["йцукенгшщзх","фывапролджэ","ячсмитьбю"],["qwertyuiop","asdfghjkl","zxcvbnm"]];
@@ -103,6 +104,11 @@ function appWindow(){
     if(sim.view==="result")return `<div class="win"><div class="bar2"><div class="yts" style="background:#f0f1f5;color:#111">${tr(["погода на завтра","weather tomorrow"])}</div></div><div class="body" style="align-items:center;justify-content:center;gap:.3em"><div style="font-size:4em">⛅</div><b style="font-size:2em">+24°</b><span style="color:#777">${tr(["Завтра, без дождя","Tomorrow, no rain"])}</span></div></div>`;
     return `<div class="win"><div class="body" style="align-items:center;justify-content:center;gap:1em;padding:1em"><b style="font-size:1.6em;color:#2f7df6">${tr(["Поиск","Search"])}</b><div class="yts" style="background:#f0f1f5;color:#777;flex:none;width:100%" data-ev="web:search">${IC.search.replace("<svg",'<svg style="width:1.1em;height:1.1em"')}${tr(["Что найти?","What are you looking for?"])}</div></div></div>`;
   }
+  if(a==="weather")return `<div class="win"><div class="body" style="align-items:center;justify-content:center;gap:.3em;background:linear-gradient(180deg,#8fd3ff,#e8f6ff)"><div style="font-size:5em">⛅</div><b style="font-size:2.6em">+24°</b><span>${tr(["Сегодня, без дождя","Today, no rain"])}</span></div></div>`;
+  if(a==="store"){const apps=[["weather",["Погода","Weather"],["Прогноз на каждый день","Forecast for every day"]],["calc",["Шахматы","Chess"],["Игра для ума","A game for the mind"]],["clock",["Радио","Radio"],["Музыка и новости","Music and news"]]];
+    if(sim.view==="detail")return `<div class="win">${title(tr(["Магазин","App store"]))}<div class="body" style="padding:1em;gap:.8em"><div style="display:flex;gap:.9em;align-items:center"><div class="app"><div class="ic" style="background:${COL.weather};color:#fff">${IC.weather}</div></div><div><b style="font-size:1.2em">${tr(["Погода","Weather"])}</b><div style="color:#777;font-size:.85em">★ 4,6 · ${tr(["Бесплатно","Free"])}</div></div></div>
+      <div class="sbtn" data-ev="${sim.inst?"store:open":"store:install"}" style="${sim.inst===1?"background:#9aa":""}">${tr(sim.inst===2?["Открыть","Open"]:sim.inst===1?["Установка…","Installing…"]:["Установить","Install"])}</div><div style="font-size:.9em;line-height:1.5;color:#444">${tr(["Показывает погоду на сегодня и на неделю. Людям нравится: оценка 4,6 из 5.","Shows the weather for today and the week. People like it: rated 4.6 out of 5."])}</div></div></div>`;
+    return `<div class="win">${title(tr(["Магазин","App store"]))}<div class="body">${apps.map((x,i)=>`<div class="row" data-ev="store:${i}"><div class="av" style="background:${COL[x[0]]};border-radius:.7em">${IC[x[0]].replace("<svg",'<svg style="width:1.5em;height:1.5em"')}</div><div class="tx"><b>${esc(tr(x[1]))}</b><small>${esc(tr(x[2]))}</small></div><span style="color:#1a73e8;font-weight:700;font-size:.85em">${tr(["Бесплатно","Free"])}</span></div>`).join("")}</div></div>`;}
   return `<div class="win"><div class="body" style="align-items:center;justify-content:center;gap:.6em;color:#555;padding:1em;text-align:center"><div class="app"><div class="ic" style="background:${COL[a]};color:#fff">${IC[a]}</div></div><b>${esc(tr(NAMES[a]))}</b></div></div>`;
 }
 function render(){
@@ -112,20 +118,21 @@ function render(){
   if(sim.locked)body=`<div class="lock"><div><div class="clk">12:30</div><div>${tr(["Пятница, 2 октября","Friday, 2 October"])}</div></div><div>🔒<br>${tr(["Проведите вверх","Swipe up"])}</div></div>`;
   else if(sim.recents)body=`<div style="flex:1;display:flex;gap:.8em;align-items:center;justify-content:center;background:rgba(0,0,0,.35);padding:1em">${sim.opened.length?sim.opened.slice(-2).map(a=>`<div style="background:#fff;color:#111;border-radius:1.2em;width:44%;height:60%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4em;font-size:.9em">${appIcon(a,false)}</div>`).join(""):`<b>${tr(["Нет открытых приложений","No open apps"])}</b>`}</div>`;
   else if(sim.app)body=appWindow();
-  else body=`<div class="grid">${PAGES[sim.page].map(a=>appIcon(a)).join("")}</div><div class="pgdots"><i class="${sim.page?"":"on"}"></i><i class="${sim.page?"on":""}"></i></div><div class="dock">${DOCK.map(a=>appIcon(a)).join("")}</div>`;
+  else body=`<div class="grid">${[...PAGES[sim.page],...(sim.installed&&!sim.page?["weather"]:[])].map(a=>appIcon(a)).join("")}</div><div class="pgdots"><i class="${sim.page?"":"on"}"></i><i class="${sim.page?"on":""}"></i></div><div class="dock">${DOCK.map(a=>appIcon(a)).join("")}</div>`;
   const darkBar=sim.app&&!sim.locked&&!sim.recents&&!sim.shade&&!(sim.app==="phone"&&sim.call)&&sim.app!=="camera"&&sim.app!=="video";
   let ov="";
   if(sim.shade){const q=(id,name,on,sub)=>`<div class="q ${on?"on":""}" data-ev="qs:${id}">${IC[id]}<div>${name}${sub?`<small>${sub}</small>`:""}</div></div>`;
     ov+=`<div class="ovl shade"><div class="qs">${q("wifi","Wi-Fi",sim.wifi,tr(sim.wifi?["Дом","Home"]:["Выключен","Off"]))}${q("bt","Bluetooth",sim.bt,tr(sim.btDev?["Наушники","Headphones"]:sim.bt?["Включён","On"]:["Выключен","Off"]))}
       ${q("data",tr(["Моб. интернет","Mobile data"]),sim.data)}${q("torch",tr(["Фонарик","Flashlight"]),sim.torch)}${q("plane",tr(["Режим полёта","Airplane mode"]),sim.plane)}${q("silent",tr(["Без звука","Silent"]),sim.silent)}</div>
-      <div class="slider" data-ev="bright" data-drag="bright"><i style="width:${sim.bright}%"></i><span>☀</span></div><div class="note">💬 <b>${tr(["Сын","Son"])}</b>: ${tr(["Пап, как дела?","Dad, how are you?"])}</div></div>`;}
-  if(sim.menu)ov+=`<div class="ovl amenu" data-ev="menu:close"><div class="m"><div style="display:flex;gap:.6em;align-items:center"><b>${esc(tr(NAMES[sim.menu]))}</b></div><div>ⓘ ${tr(["О приложении","App info"])}</div><div>🗑 ${tr(["Удалить","Uninstall"])}</div></div></div>`;
+      <div class="slider" data-ev="bright" data-drag="bright"><i style="width:${sim.bright}%"></i><span>☀</span></div>${sim.notif.length?sim.notif.map((n,i)=>`<div class="note" data-ev="note:${i}">${n.app==="chat"?"💬":"🛒"} <b>${esc(tr(n.from))}</b><br>${esc(tr(n.text))}</div>`).join(""):`<div class="note" style="text-align:center;opacity:.7">${tr(["Нет уведомлений","No notifications"])}</div>`}</div>`;}
+  if(sim.banner&&!sim.shade)ov+=`<div class="banner" data-ev="note:0">💬 <b>${esc(tr(sim.banner.from))}</b><br>${esc(tr(sim.banner.text))}</div>`;
+  if(sim.menu)ov+=`<div class="ovl amenu" data-ev="menu:close"><div class="m"><div style="display:flex;gap:.6em;align-items:center"><b>${esc(tr(NAMES[sim.menu]))}</b></div><div data-ev="menu:info">ⓘ ${tr(["О приложении","App info"])}</div><div data-ev="menu:del">🗑 ${tr(["Удалить","Uninstall"])}</div></div></div>`;
   if(sim.popup)ov+=`<div class="ovl popup"><div class="p"><div class="x" data-ev="popup:x">✕</div><div style="font-size:2.4em">⚠️</div><b>${tr(["ВНИМАНИЕ! В телефоне 5 вирусов!","WARNING! 5 viruses on your phone!"])}</b><div style="margin-top:.4em">${tr(["Срочно нажмите, чтобы очистить","Press now to clean it"])}</div><div class="okb" data-ev="popup:ok">${tr(["ОЧИСТИТЬ СЕЙЧАС","CLEAN NOW"])}</div></div></div>`;
   if(sim.pmenu)ov+=`<div class="ovl pmenu"><div data-ev="pw:off">⏻ ${tr(["Выключить","Power off"])}</div><div data-ev="pw:restart">⟳ ${tr(["Перезагрузить","Restart"])}</div></div>`;
   if(sim.volShow)ov+=`<div class="vol"><i style="height:${sim.vol*10}%"></i><span>🔊</span></div>`;
   el.style.filter=`brightness(${.6+sim.bright/100*.4})`;
   el.innerHTML=statusBar(darkBar).replace('class="sb"',`class="sb"${darkBar?' data-dark':''}`)+`<div class="scr" style="${darkBar?"margin-top:-2.2em;padding-top:2.2em;background:#fff":""}">${body}${ov}</div>`+(sim.locked?"":navBar());
-  mark();
+  mark();clearTimeout(markT);markT=setTimeout(mark,340);
 }
 /* what each action does on the practice phone */
 let volT,replyT;
@@ -138,8 +145,9 @@ function handle(ev){
   if(g==="tap"&&id.startsWith("pw:")){sim.pmenu=false;if(id==="pw:restart"){sim.boot=true;setTimeout(()=>{sim.boot=false;Object.assign(sim,{app:null,shade:false,recents:false});render();},1800);}else sim.off=true;return;}
   if(g==="swipe"){
     if(sim.locked){if(id==="up")sim.locked=false;return;}
-    if(id==="down:top"){sim.shade=true;return;}
+    if(id==="down:top"){sim.shade=true;sim.banner=null;return;}
     if(id==="up"&&sim.shade){sim.shade=false;return;}
+    if((id==="left"||id==="right")&&sim.shade){sim.notif.shift();return;}
     if(id==="up"&&sim.recents){sim.opened.pop();return;}
     if(!sim.app&&!sim.shade&&!sim.recents){if(id==="left")sim.page=1;if(id==="right")sim.page=0;}
     return;
@@ -154,7 +162,13 @@ function handle(ev){
     return;
   }
   // taps
-  if(id==="menu:close"){sim.menu=null;return;}
+  if(id==="menu:close"||id==="menu:info"){sim.menu=null;return;}
+  if(id==="menu:del"){if(sim.menu==="weather"){sim.installed=false;sim.inst=0;}sim.menu=null;return;}
+  if(id.startsWith("note:")){const n=sim.notif[+id.slice(5)]||sim.banner;sim.banner=null;if(!n)return;sim.notif=sim.notif.filter(x=>x!==n);sim.shade=false;resetApps();
+    if(n.app==="chat"){sim.app="chat";sim.chatOpen=true;sim.msgs.push({t:tr(n.text)});open("chat");}else{sim.app="store";open("store");}return;}
+  if(id==="store:install"){sim.inst=1;setTimeout(()=>{sim.inst=2;sim.installed=true;render();},1300);return;}
+  if(id==="store:open"){if(sim.inst===2){sim.app="weather";open("weather");}return;}
+  if(id.startsWith("store:")){if(id==="store:0")sim.view="detail";return;}
   if(id==="popup:x"){sim.popup=false;return;}
   if(id.startsWith("nav:")){
     if(sim.popup&&id==="nav:back"){sim.popup=false;return;}
@@ -206,7 +220,7 @@ function back(){
   if(a==="mail"&&sim.mail!=null){sim.mail=null;return;}
   if(a==="gallery"&&sim.gal!=null){sim.gal=null;return;}
   if(a==="video"&&sim.yt.v!=="home"){sim.yt.v=sim.yt.v==="player"?"results":"home";sim.yt.play=false;sim.yt.ad=false;return;}
-  if((a==="settings"||a==="phone"||a==="web")&&sim.view){sim.view=a==="web"&&sim.view==="result"?"search":null;return;}
+  if((a==="settings"||a==="phone"||a==="web"||a==="store")&&sim.view){sim.view=a==="web"&&sim.view==="result"?"search":null;return;}
   sim.app=null;
 }
 
@@ -215,7 +229,7 @@ let G=null;
 const frame=$("frame");
 frame.addEventListener("pointerdown",e=>{
   if(G)return;const tEl=e.target.closest("[data-ev]"),r=$("sim").getBoundingClientRect();
-  G={x:e.clientX,y:e.clientY,t:Date.now(),ev:tEl&&tEl.dataset.ev,el:tEl,moved:false,long:false,drag:tEl&&tEl.dataset.drag,id:e.pointerId,top:(e.clientY-r.top)/r.height<.3,r};
+  G={x:e.clientX,y:e.clientY,t:Date.now(),ev:tEl&&tEl.dataset.ev,el:tEl,moved:false,long:false,drag:tEl&&tEl.dataset.drag,id:e.pointerId,top:(e.clientY-r.top)/r.height<.3||(!sim.app&&!sim.recents&&!sim.locked&&!sim.off),r};
   if(tEl)tEl.classList.add("press");
   if(G.drag)dragTo(e);
   else G.timer=setTimeout(()=>{if(G&&!G.moved&&G.ev){G.long=true;if(navigator.vibrate)try{navigator.vibrate(25);}catch(_){}emit("long:"+G.ev);}},600);
@@ -265,11 +279,22 @@ function advance(){
 }
 function enterStep(){const st=cur.steps[stepI];if(st.pre){st.pre(sim);}render();$("hint").textContent="";say(tr(st.t));$("prog").style.width=(stepI/cur.steps.length*100)+"%";}
 function say(text){const s=$("say");s.textContent=text;s.classList.remove("in");void s.offsetWidth;s.classList.add("in");speak(text);}
+let markT;
 function mark(){
-  document.querySelectorAll(".hl").forEach(e=>e.classList.remove("hl"));document.querySelectorAll(".hand").forEach(e=>e.remove());
-  if(!cur||free||finished)return;const st=cur.steps[stepI];if(!st)return;
-  if(st.hl){const e=document.querySelector(`#frame [data-ev="${st.hl}"]`);if(e)e.classList.add("hl");}
-  if(st.hand){const h=document.createElement("div");h.className="hand "+st.hand;h.textContent="👆";$("sim").appendChild(h);}
+  document.querySelectorAll(".hl").forEach(e=>e.classList.remove("hl"));document.querySelectorAll(".hand,.hole,.finger,.dimall").forEach(e=>e.remove());
+  const coach=$("coach");
+  if(!cur||free||finished){coach.classList.remove("bottom");return;}const st=cur.steps[stepI];if(!st)return;
+  const simEl=$("sim"),sr=simEl.getBoundingClientRect();let bottom=false;
+  if(st.hl){const e=document.querySelector(`#frame [data-ev="${st.hl}"]`);
+    if(e&&e.classList.contains("hw")){e.classList.add("hl");const d=document.createElement("div");d.className="dimall";simEl.appendChild(d);bottom=true;}
+    else if(e){const r=e.getBoundingClientRect(),pad=sr.width*.012,h=document.createElement("div");h.className="hole";
+      h.style.cssText=`left:${r.left-sr.left-pad}px;top:${r.top-sr.top-pad}px;width:${r.width+pad*2}px;height:${r.height+pad*2}px`;simEl.appendChild(h);
+      const cy=r.top+r.height/2-sr.top;bottom=cy<sr.height*.5;
+      if(r.height<sr.height*.3){const f=document.createElement("div"),below=r.bottom-sr.top<sr.height*.8;f.className="finger"+(below?"":" dn");f.textContent=below?"👆":"👇";
+        f.style.left=Math.max(0,Math.min(sr.width-50,r.left-sr.left+r.width/2-sr.width*.06))+"px";if(below)f.style.top=(r.bottom-sr.top+pad)+"px";else f.style.bottom=(sr.bottom-r.top+pad)+"px";simEl.appendChild(f);}}}
+  if(st.hand){const h=document.createElement("div");h.className="hand "+st.hand;h.textContent="👆";simEl.appendChild(h);bottom=st.hand==="down";}
+  if(st.coach)bottom=st.coach==="bottom";
+  coach.classList.toggle("bottom",bottom);
 }
 function finish(){
   finished=true;P.done[cur.id]=true;store();$("prog").style.width="100%";mark();
@@ -300,6 +325,5 @@ $("bSay").onclick=()=>{talk=!talk;P.talk=talk;store();paintSay();if(talk)speak($
 let ac;function beep(f,d){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),a=ac.createGain();o.type="sine";o.frequency.value=f;a.gain.value=.08;a.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+d);o.connect(a).connect(ac.destination);o.start();o.stop(ac.currentTime+d);}catch(e){}}
 /* everything inside the practice phone is sized from its width */
 function fit(){const f=$("frame");f.style.fontSize="16px";const w=f.getBoundingClientRect().width;if(w)f.style.fontSize=(w/21)+"px";}
-addEventListener("resize",()=>{if(!$("lessonView").classList.contains("hide")){fit();}});
-new ResizeObserver(()=>{if(!$("lessonView").classList.contains("hide"))fit();}).observe($("coach"));
+addEventListener("resize",()=>{if(!$("lessonView").classList.contains("hide")){fit();render();}});
 showMenu();

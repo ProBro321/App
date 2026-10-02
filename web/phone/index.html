@@ -29,13 +29,15 @@
   .lesson b{display:block;font-size:20px;line-height:1.2;}
   .lesson span{display:block;color:var(--muted);font-size:15.5px;margin-top:3px;line-height:1.3;}
   /* ---------- coach ---------- */
-  .coach{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:12px 14px;flex:0 0 auto;box-shadow:0 4px 14px rgba(120,80,20,.08);}
-  .ctop{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .coach{position:absolute;left:10px;right:10px;top:44px;z-index:50;max-height:52%;overflow-y:auto;background:var(--card);color:var(--ink);border:3px solid var(--brand);border-radius:20px;padding:10px 14px 12px;box-shadow:0 10px 30px rgba(0,0,0,.45);}
+  .coach.bottom{top:auto;bottom:66px;}
+  .ctop{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .ctop .bar{flex:1;margin:0;}
   .ctop .ttl{flex:1;font-weight:700;color:var(--muted);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .ctop button{border:2px solid var(--line);background:#fff;border-radius:12px;height:42px;min-width:46px;padding:0 10px;font-size:16px;font-weight:700;}
+  .ctop button{border:2px solid var(--line);background:#fff;border-radius:12px;height:38px;min-width:44px;padding:0 8px;font-size:16px;font-weight:700;}
   .bar{height:8px;border-radius:5px;background:#f1e6d3;overflow:hidden;margin-bottom:10px;}
   .bar i{display:block;height:100%;background:var(--brand);border-radius:5px;transition:width .4s;}
-  #say{font-size:20px;line-height:1.38;font-weight:600;min-height:3.9em;}
+  #say{font-size:19px;line-height:1.36;font-weight:600;}
   #say.in{animation:sayin .35s;}
   @keyframes sayin{from{opacity:0;transform:translateY(6px);}}
   #hint{margin-top:8px;font-size:17px;font-weight:700;color:var(--bad);line-height:1.3;}
@@ -45,13 +47,16 @@
   .cta{display:block;width:100%;border:0;border-radius:16px;padding:16px;font-size:20px;font-weight:800;color:#fff;background:linear-gradient(180deg,var(--brand),var(--brand2));margin-top:8px;}
   .cta.ghost{background:#fff;color:var(--ink);border:2px solid var(--line);}
   /* ---------- the practice phone ---------- */
-  .stage{flex:1;min-height:0;display:flex;justify-content:center;align-items:center;}
-  .frame{position:relative;height:100%;aspect-ratio:9/17.5;max-width:100%;background:#15161a;border-radius:2.2em;padding:.5em;box-shadow:0 10px 30px rgba(0,0,0,.3);touch-action:none;}
+  /* the practice phone fills the whole real screen; the teacher's note floats over it */
+  #lessonView{position:fixed;inset:0;background:#0b0c10;display:flex;justify-content:center;}
+  .phonebox{position:relative;height:100%;width:100%;max-width:calc(100dvh*9/16);}
+  .frame{position:absolute;inset:0;background:#15161a;touch-action:none;}
+  @media (min-width:560px){.phonebox{margin:10px 0;height:calc(100% - 20px);max-width:calc((100dvh - 20px)*9/17);}.frame{border-radius:28px;padding:8px;}#sim{border-radius:22px!important;}}
   .frame.torch{box-shadow:0 0 0 6px #fff7b0,0 0 60px 20px rgba(255,235,120,.9);}
-  .hw{position:absolute;right:-.62em;width:.62em;background:#3a3c44;border-radius:0 .3em .3em 0;}
-  .hw::after{content:"";position:absolute;inset:-.6em -1.6em -.6em -.6em;}
+  .hw{position:absolute;right:0;width:.75em;background:#3a3c44;border-radius:.4em 0 0 .4em;z-index:30;box-shadow:0 0 0 2px rgba(255,255,255,.35);}
+  .hw::after{content:"";position:absolute;inset:-.5em 0 -.5em -1.6em;}
   .hw.vu{top:17%;height:8%;}.hw.vd{top:26%;height:8%;}.hw.pw{top:40%;height:9%;background:#ff8a3d;}
-  #sim{position:relative;width:100%;height:100%;border-radius:1.75em;overflow:hidden;background:linear-gradient(160deg,#7fb6ff,#a78bfa 55%,#f6a6c9);color:#fff;display:flex;flex-direction:column;}
+  #sim{position:relative;width:100%;height:100%;border-radius:0;overflow:hidden;background:linear-gradient(160deg,#7fb6ff,#a78bfa 55%,#f6a6c9);color:#fff;display:flex;flex-direction:column;}
   .sb{display:flex;justify-content:space-between;align-items:center;padding:.5em 1.1em .3em;font-size:.82em;font-weight:700;flex:0 0 auto;position:relative;z-index:6;}
   .sb .r{display:flex;gap:.5em;align-items:center;}
   .sb svg{width:1.25em;height:1.25em;display:block;}
@@ -63,7 +68,7 @@
   .nav svg{width:1.3em;height:1.3em;}
   .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.1em .3em;padding:1.4em .7em;align-content:start;flex:1;}
   .app{display:flex;flex-direction:column;align-items:center;gap:.3em;font-size:.72em;font-weight:600;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.4);border-radius:1em;padding:.2em 0;}
-  .app .ic{width:4.2em;height:4.2em;border-radius:1.25em;display:grid;place-items:center;box-shadow:0 3px 8px rgba(0,0,0,.25);}
+  .app .ic{position:relative;width:4.2em;height:4.2em;border-radius:1.25em;display:grid;place-items:center;box-shadow:0 3px 8px rgba(0,0,0,.25);}
   .app .ic svg{width:2.4em;height:2.4em;}
   .dock{display:grid;grid-template-columns:repeat(4,1fr);padding:.6em .7em .7em;background:rgba(255,255,255,.22);margin:0 .6em .6em;border-radius:1.6em;}
   .pgdots{display:flex;gap:.4em;justify-content:center;padding:.4em;}
@@ -72,6 +77,18 @@
   .hl{position:relative;z-index:5;animation:hl 1.2s ease-in-out infinite;border-radius:1em;}
   @keyframes hl{0%,100%{box-shadow:0 0 0 .18em #ffd400,0 0 0 .5em rgba(255,212,0,.35);}50%{box-shadow:0 0 0 .3em #ffd400,0 0 0 1em rgba(255,212,0,.0);}}
   .hw.hl{animation:hl 1.2s ease-in-out infinite;}
+  /* spotlight: everything is dimmed except the thing to touch */
+  .hole{position:absolute;z-index:25;pointer-events:none;border-radius:1em;box-shadow:0 0 0 .22em #ffd400,0 0 0 300em rgba(8,8,16,.58);animation:holep 1.1s ease-in-out infinite;}
+  @keyframes holep{50%{box-shadow:0 0 0 .5em #ffd400,0 0 0 300em rgba(8,8,16,.58);}}
+  .finger{position:absolute;z-index:26;pointer-events:none;font-size:2.8em;line-height:1;filter:drop-shadow(0 3px 4px rgba(0,0,0,.6));animation:fing .8s ease-in-out infinite;}
+  .finger.dn{animation-name:fing2;}
+  @keyframes fing{50%{transform:translateY(.25em);}}
+  @keyframes fing2{50%{transform:translateY(-.25em);}}
+  .dimall{position:absolute;inset:0;z-index:24;pointer-events:none;background:rgba(8,8,16,.35);}
+  .badge{position:absolute;top:-.3em;right:-.3em;min-width:1.5em;height:1.5em;border-radius:1em;background:#e5412f;color:#fff;font-size:.95em;font-weight:800;display:grid;place-items:center;border:.12em solid #fff;}
+  .banner{position:absolute;left:.6em;right:.6em;top:2.4em;z-index:9;background:#fff;color:#111;border-radius:1.2em;padding:.7em .9em;font-size:.9em;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:sh .3s;}
+  .note[data-ev]{background:#fff;color:#111;}
+  .sbtn{background:#1a73e8;color:#fff;border-radius:1.4em;padding:.6em 1.2em;font-weight:800;font-size:.9em;text-align:center;}
   .hand{position:absolute;z-index:30;font-size:2.6em;pointer-events:none;filter:drop-shadow(0 3px 4px rgba(0,0,0,.5));}
   .hand.left{top:45%;left:70%;animation:hL 1.6s ease-in-out infinite;}
   .hand.right{top:45%;left:15%;animation:hR 1.6s ease-in-out infinite;}
@@ -191,17 +208,16 @@
 </head>
 <body>
 <div class="col" id="menu"></div>
-<div class="col hide" id="lessonView">
-  <div class="coach" id="coach">
-    <div class="ctop"><button id="bMenu">☰</button><div class="ttl" id="lTitle"></div><button id="bSay">🔊</button></div>
-    <div class="bar"><i id="prog"></i></div>
-    <div id="say"></div><div id="hint"></div>
-  </div>
-  <div class="stage"><div class="frame" id="frame">
+<div class="hide" id="lessonView"><div class="phonebox">
+  <div class="frame" id="frame">
     <div class="hw vu" data-ev="hw:volup"></div><div class="hw vd" data-ev="hw:voldown"></div><div class="hw pw" data-ev="hw:power"></div>
     <div id="sim"></div>
-  </div></div>
-</div>
+  </div>
+  <div class="coach" id="coach">
+    <div class="ctop"><button id="bMenu">☰</button><div class="bar"><i id="prog"></i></div><div class="ttl hide" id="lTitle"></div><button id="bSay">🔊</button></div>
+    <div id="say"></div><div id="hint"></div>
+  </div>
+</div></div>
 <script src="lessons.js"></script>
 <script src="app.js"></script>
 </body>

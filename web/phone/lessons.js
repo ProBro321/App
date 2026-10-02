@@ -14,13 +14,13 @@ const UI={
   freeSay:["Нажимайте на что хотите. Здесь нельзя ничего испортить.","Touch whatever you like. You can't break anything here."]
 };
 const NAMES={phone:["Телефон","Phone"],chat:["Сообщения","Messages"],web:["Интернет","Internet"],camera:["Камера","Camera"],mail:["Почта","Mail"],video:["YouTube","YouTube"],gallery:["Галерея","Gallery"],settings:["Настройки","Settings"],
-  calc:["Калькулятор","Calculator"],clock:["Часы","Clock"],cal:["Календарь","Calendar"],notes:["Заметки","Notes"],store:["Магазин","App store"]};
+  calc:["Калькулятор","Calculator"],clock:["Часы","Clock"],cal:["Календарь","Calendar"],notes:["Заметки","Notes"],store:["Магазин","App store"],weather:["Погода","Weather"]};
 const EXPL={
   "app:phone":["«Телефон» — звонить людям.","Phone — for calling people."],"app:chat":["«Сообщения» — переписка. WhatsApp работает так же.","Messages — for texting. WhatsApp works the same way."],
   "app:web":["«Интернет» (Chrome) — искать что угодно: погоду, новости, адреса.","Internet (Chrome) — look up anything: weather, news, addresses."],"app:camera":["«Камера» — фотографировать и снимать видео.","Camera — take photos and videos."],
   "app:mail":["«Почта» (Gmail) — письма через интернет.","Mail (Gmail) — letters over the internet."],"app:video":["YouTube — бесплатные видео: песни, фильмы, новости.","YouTube — free videos: songs, films, news."],
   "app:gallery":["«Галерея» — все ваши фотографии.","Gallery — all your photos."],"app:settings":["«Настройки» — звук, яркость, Wi-Fi, Bluetooth.","Settings — sound, brightness, Wi-Fi, Bluetooth."],
-  "app:store":["«Магазин» — отсюда ставят новые приложения. Большинство бесплатные.","App store — where new apps are installed from. Most are free."],
+  "app:weather":["«Погода» — прогноз на сегодня и на неделю.","Weather — the forecast for today and the week."],"app:store":["«Магазин» — отсюда ставят новые приложения. Большинство бесплатные.","App store — where new apps are installed from. Most are free."],
   "nav:home":["Кружок — «Домой»: всегда возвращает на главный экран.","Circle — Home: always takes you back to the main screen."],"nav:back":["Треугольник — «Назад»: на один шаг назад.","Triangle — Back: one step back."],
   "nav:recents":["Квадрат — недавно открытые приложения.","Square — recently opened apps."],"st:battery":["Батарейка — сколько осталось заряда.","Battery — how much charge is left."],
   "st:wifi":["Значок Wi-Fi — телефон подключён к домашнему интернету.","Wi-Fi icon — the phone is on the home internet."],"st:signal":["Полоски — сила сигнала сотовой связи.","Bars — strength of the mobile signal."],
@@ -65,6 +65,25 @@ const LESSONS=[
  {t:["Светит! Выключите его тем же нажатием.","It's shining! Turn it off with the same touch."],ok:"tap:qs:torch",hl:"qs:torch"},
  {t:["Полоска с солнышком — яркость экрана. Поставьте на неё палец и подвигайте влево-вправо.","The bar with the sun is screen brightness. Put your finger on it and slide left and right."],ok:"drag:bright",hl:"bright"},
  {t:["Чтобы закрыть шторку, проведите пальцем снизу вверх.","To close the panel, slide your finger from the bottom up."],ok:"swipe:up",hand:"up"}]},
+{id:"notif",t:["Уведомления","Notifications"],s:["Что это за «дзинь» и что с ним делать","What that 'ding' is and what to do with it"],steps:[
+ {t:["Дзинь! Вверху появилось сообщение. Это «уведомление» — так телефон сообщает о новом: сообщении, пропущенном звонке, письме. Оно само спрячется, но не потеряется. Чтобы увидеть все уведомления, проведите пальцем сверху вниз.","Ding! A message appeared at the top. That's a 'notification' — how the phone tells you about something new: a message, a missed call, a letter. It hides by itself but isn't lost. To see all notifications, slide your finger from the top down."],
+  pre:s=>{const n={app:"chat",from:["Сын","Son"],text:["Пап, позвони мне, когда сможешь","Dad, call me when you can"]};s.notif=[n];s.banner=n;},ok:"swipe:down:top",hand:"down"},
+ {t:["Все уведомления собираются здесь, под кнопками. Нажмите на сообщение от сына — и телефон сам откроет переписку.","All notifications collect here, under the buttons. Touch the message from your son — the phone opens the conversation for you."],ok:"tap:note:0",hl:"note:0"},
+ {t:["Вот оно — вы попали прямо в нужное приложение. Нажмите «Домой».","There it is — you landed right in the correct app. Press Home."],ok:"tap:nav:home",hl:"nav:home"},
+ {t:["Пришло ещё одно уведомление — на этот раз реклама. Откройте шторку: проведите сверху вниз.","Another notification arrived — this time an advert. Open the panel: slide from the top down."],pre:s=>{s.notif=[{app:"store",from:["Магазин","App store"],text:["Скидки! Купите прямо сейчас!","Sale! Buy right now!"]}];},ok:"swipe:down:top",hand:"down"},
+ {t:["Ненужное уведомление не надо открывать. Его можно просто смахнуть: проведите по нему пальцем вбок.","You don't have to open a notification you don't need. Just flick it away: slide your finger sideways across it."],ok:["swipe:right","swipe:left"],hand:"right",coach:"top",bad:{"tap:note:0":["Не нажимайте на рекламу — смахните её пальцем вбок.","Don't touch the advert — flick it sideways with your finger."]}},
+ {t:["Чисто! Ещё одно: красный кружок с цифрой на значке приложения — тоже уведомление, он показывает, сколько там непрочитанного. Закройте шторку: проведите снизу вверх.","All clear! One more thing: a red circle with a number on an app's icon is also a notification — it shows how many unread things are inside. Close the panel: slide from the bottom up."],ok:"swipe:up",hand:"up"}]},
+{id:"store",t:["Новые приложения","New apps"],s:["Откуда берутся приложения, как поставить и удалить","Where apps come from, installing and removing"],steps:[
+ {t:["Приложения добавляют в телефон из «Магазина» (на вашем телефоне он называется Play Маркет). Большинство бесплатные. Он на второй странице: проведите справа налево.","Apps are added to the phone from the App store (on your phone it's called Play Store). Most are free. It's on the second page: slide from right to left."],ok:"swipe:left",hand:"left"},
+ {t:["Откройте «Магазин».","Open the App store."],ok:"tap:app:store",hl:"app:store"},
+ {t:["Здесь тысячи приложений на любой случай. Поставим «Погоду»: нажмите на неё.","There are thousands of apps here for everything. Let's get Weather: touch it."],ok:"tap:store:0",hl:"store:0"},
+ {t:["Это страница приложения: что оно делает и как его оценили люди. Нажмите «Установить».","This is the app's page: what it does and how people rated it. Press Install."],ok:"tap:store:install",hl:"store:install"},
+ {t:["Приложение скачивается из интернета и поселяется в телефоне. Нажмите «Домой».","The app downloads from the internet and settles into the phone. Press Home."],ok:"tap:nav:home",hl:"nav:home"},
+ {t:["Видите новый значок «Погода»? Раньше его не было. Откройте его.","See the new Weather icon? It wasn't there before. Open it."],pre:s=>{s.installed=true;s.inst=2;},ok:"tap:app:weather",hl:"app:weather"},
+ {t:["Работает! Теперь «Домой».","It works! Now Home."],ok:"tap:nav:home",hl:"nav:home"},
+ {t:["Приложение можно и удалить. Вот для этого и нужно долгое нажатие: держите палец на «Погоде», пока не появится меню.","An app can also be removed. This is what holding is for: keep your finger on Weather until the menu appears."],ok:"long:app:weather",hl:"app:weather"},
+ {t:["Нажмите «Удалить».","Touch Uninstall."],ok:"tap:menu:del",hl:"menu:del"},
+ {t:["Удалено. Если случайно удалите что-то нужное — его можно снова поставить из Магазина. Правило: ставьте приложения только из Магазина и никогда — по ссылке из сообщения. Нажмите «Домой».","Removed. If you ever delete something you need by accident, you can install it again from the App store. Rule: only install apps from the App store, never from a link in a message. Press Home."],ok:"tap:nav:home",hl:"nav:home"}]},
 {id:"calls",t:["Звонки","Phone calls"],s:["Позвонить, ответить, громкая связь","Call, answer, speaker"],steps:[
  {t:["Откройте «Телефон».","Open Phone."],ok:"tap:app:phone",hl:"app:phone"},
  {t:["Наберите любой номер: нажмите три цифры или больше.","Dial any number: press three digits or more."],ok:(e,s)=>e.startsWith("tap:key:")&&s.dial.length>=3,allow:["tap:key:"],hl:"keys"},
