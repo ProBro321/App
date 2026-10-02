@@ -167,6 +167,26 @@ public class MainActivity extends Activity {
             askNotifications(false);
         }
 
+        /** Anime List: the manga / manhwa being read, as JSON [{mu, title, n}]. */
+        @JavascriptInterface
+        public void setReading(final String json) {
+            AiringWorker.updateReading(getApplicationContext(), json);
+        }
+
+        /** Anime List: chapter data from MangaUpdates (websites can't call it directly). Answers window.__mu(key, status, text). */
+        @JavascriptInterface
+        public void muFetch(final String key, final String method, final String path, final String body) {
+            new Thread(() -> {
+                final String[] r = AiringWorker.mu(method, path, body);
+                final String js = "window.__mu&&window.__mu(" + org.json.JSONObject.quote(key) + "," + r[0] + "," + org.json.JSONObject.quote(r[1]) + ")";
+                runOnUiThread(() -> {
+                    String current = web.getUrl();
+                    if (current == null || !APP_HOST.equals(Uri.parse(current).getHost())) return;
+                    web.evaluateJavascript(js, null);
+                });
+            }).start();
+        }
+
         @JavascriptInterface
         public void testNotification() {
             askNotifications(true);

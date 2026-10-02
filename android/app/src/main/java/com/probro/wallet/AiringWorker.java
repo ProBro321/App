@@ -68,6 +68,83 @@ public class AiringWorker extends Worker {
         scheduleExact(ctx, next);
     }
 
+    /** Saves the manga / manhwa being read, as JSON [{mu, title, n}], for the chapter checks. */
+    static void updateReading(Context ctx, String json) {
+        SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        SharedPreferences.Editor ed = sp.edit().putString("mlist", json);
+        try {
+            JSONArray a = new JSONArray(json);
+            for (int i = 0; i < a.length(); i++) {
+                JSONObject o = a.getJSONObject(i);
+                String mu = o.optString("mu", "");
+                int n = o.optInt("n", -1);
+                // Chapters the app already showed never trigger a notification.
+                if (!mu.isEmpty() && n > sp.getInt("mlast_" + mu, -1)) ed.putInt("mlast_" + mu, n);
+            }
+        } catch (Exception ignored) { }
+        ed.apply();
+        Constraints net = new Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build();
+        WorkManager.getInstance(ctx).enqueueUniquePeriodicWork("airing-check", ExistingPeriodicWorkPolicy.KEEP,
+                new PeriodicWorkRequest.Builder(AiringWorker.class, 2, TimeUnit.HOURS).setConstraints(net).build());
+    }
+
+    static final String MU = "https://api.mangaupdates.com/v1/";
+
+    /** One request to the MangaUpdates API. Returns {status, body}. */
+    static String[] mu(String method, String path, String body) {
+        HttpURLConnection c = null;
+        try {
+            if (path == null || path.contains("://") || path.contains("..")) return new String[]{"0", ""};
+            c = (HttpURLConnection) new URL(MU + path).openConnection();
+            c.setConnectTimeout(15000);
+            c.setReadTimeout(15000);
+            c.setRequestMethod("POST".equals(method) ? "POST" : "GET");
+            c.setRequestProperty("Accept", "application/json");
+            if ("POST".equals(method)) {
+                c.setDoOutput(true);
+                c.setRequestProperty("Content-Type", "application/json");
+                try (OutputStream o = c.getOutputStream()) { o.write((body == null ? "{}" : body).getBytes(StandardCharsets.UTF_8)); }
+            }
+            int code = c.getResponseCode();
+            InputStream in = code >= 400 ? c.getErrorStream() : c.getInputStream();
+            ByteArrayOutputStream b = new ByteArrayOutputStream();
+            if (in != null) {
+                byte[] buf = new byte[8192];
+                int n;
+                while ((n = in.read(buf)) > 0) b.write(buf, 0, n);
+                in.close();
+            }
+            return new String[]{String.valueOf(code), b.toString("UTF-8")};
+        } catch (Exception e) {
+            return new String[]{"0", ""};
+        } finally { if (c != null) c.disconnect(); }
+    }
+
+    private void checkChapters(Context ctx, SharedPreferences sp) {
+        try {
+            JSONArray list = new JSONArray(sp.getString("mlist", "[]"));
+            SharedPreferences.Editor ed = sp.edit();
+            for (int i = 0; i < list.length() && i < 40; i++) {
+                JSONObject o = list.getJSONObject(i);
+                String mu = o.optString("mu", "");
+                if (!mu.matches("\\d+")) continue;
+                String[] r = mu("GET", "series/" + mu, null);
+                if (!"200".equals(r[0])) continue;
+                int latest = (int) Math.floor(new JSONObject(r[1]).optDouble("latest_chapter", 0));
+                if (latest < 1) continue;
+                int last = sp.getInt("mlast_" + mu, -1);
+                if (last < 0) { ed.putInt("mlast_" + mu, latest); continue; }
+                if (latest > last) {
+                    String what = latest - last == 1 ? "Chapter " + latest + " is out" : "Chapters " + (last + 1) + "–" + latest + " are out";
+                    notify(ctx, (int) (Long.parseLong(mu) % 1000000000L), o.optString("title", "New chapter"), what + " 📖");
+                    ed.putInt("mlast_" + mu, latest);
+                }
+                Thread.sleep(1200);
+            }
+            ed.apply();
+        } catch (Exception ignored) { }
+    }
+
     static void scheduleExact(Context ctx, long airingAtSec) {
         if (airingAtSec == Long.MAX_VALUE || airingAtSec <= 0) return;
         long delay = Math.max(60_000L, airingAtSec * 1000L - System.currentTimeMillis() + 10 * 60_000L);
@@ -82,6 +159,7 @@ public class AiringWorker extends Worker {
     public Result doWork() {
         Context ctx = getApplicationContext();
         SharedPreferences sp = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        checkChapters(ctx, sp);
         try {
             JSONArray list = new JSONArray(sp.getString("list", "[]"));
             if (list.length() == 0) return Result.success();
@@ -155,7 +233,7 @@ public class AiringWorker extends Worker {
         if (Build.VERSION.SDK_INT >= 33 && ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return;
         NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CHANNEL) == null) {
-            nm.createNotificationChannel(new NotificationChannel(CHANNEL, "New episodes", NotificationManager.IMPORTANCE_HIGH));
+            nm.createNotificationChannel(new NotificationChannel(CHANNEL, "New episodes and chapters", NotificationManager.IMPORTANCE_HIGH));
         }
         Intent open = new Intent(ctx, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent pi = PendingIntent.getActivity(ctx, id, open, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);

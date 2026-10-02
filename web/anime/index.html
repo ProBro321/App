@@ -355,6 +355,13 @@ try{if(!window.AndroidBridge&&!/[?&]stay/.test(location.search)&&matchMedia("(mi
     color:var(--text);font-weight:750;font-size:14px;cursor:pointer;font-family:inherit;}
   .statslink svg{width:18px;height:18px;color:var(--brand);}
   .statslink span{margin-left:auto;color:var(--muted);font-size:20px;line-height:1;}
+
+  /* ---------- watch list / read list ---------- */
+  .modeseg{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:5px;margin:0 0 12px;}
+  .modeseg button{display:flex;align-items:center;justify-content:center;gap:8px;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:800;font-size:14.5px;padding:11px 8px;border-radius:14px;cursor:pointer;transition:background-color .2s,color .2s;}
+  .modeseg button svg{width:20px;height:20px;flex:none;}
+  .modeseg button small{font-weight:700;opacity:.7;font-size:12px;}
+  .modeseg button.on{background:linear-gradient(160deg,var(--brand),var(--brand-dim));color:#fff;}
 </style>
 </head>
 <body>
@@ -363,6 +370,7 @@ try{if(!window.AndroidBridge&&!/[?&]stay/.test(location.search)&&matchMedia("(mi
   <!-- LIST -->
   <div class="view" id="view-list">
     <div class="topbar"><h1>My <span>List</span></h1><div style="display:flex;gap:8px"><button class="iconbtn bellbtn" id="bell" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5a6 6 0 0 1 12 0c0 4.5 1.8 6.3 2.5 7H3.5c.7-.7 2.5-2.5 2.5-7z"/><path d="M10 20a2.2 2.2 0 0 0 4 0"/></svg><span class="bdot hidden" id="bellDot"></span></button><button class="iconbtn" id="gear" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.54 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9c.26.6.85 1 1.51 1H21a2 2 0 1 1 0 4h-.09c-.66 0-1.25.4-1.51 1z"/></svg></button></div></div>
+    <div class="modeseg" id="modeSeg"><button data-m="watch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="13" rx="3"/><path d="M8 21h8"/><path d="M10.5 9.2v4.6l4-2.3z" fill="currentColor" stroke-width="1.4"/></svg>Watch list<small></small></button><button data-m="read"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z"/><path d="M12 6.5V19.5"/></svg>Read list<small></small></button></div>
     <div class="strip" id="strip" title="See all stats"></div>
     <button class="statslink" id="statsLink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M5 20v-7M12 20V5M19 20v-10"/></svg>See all my stats<span>›</span></button>
     <div class="coverbar hidden" id="coverBar"><span id="coverTxt">Loading covers…</span><span class="mbar"><i id="coverFill" style="width:0%"></i></span></div>
@@ -740,8 +748,8 @@ function normalize(s){
   return s;
 }
 let state=load();
-function saveUi(){try{localStorage.setItem(KEY+"_ui",JSON.stringify({fStatus,fType,sortBy}));}catch(e){}}
-function loadUi(){try{const u=JSON.parse(localStorage.getItem(KEY+"_ui"));if(u){fStatus=u.fStatus||fStatus;fType=u.fType||fType;sortBy=u.sortBy||sortBy;return true;}}catch(e){}return false;}
+function saveUi(){try{localStorage.setItem(KEY+"_ui",JSON.stringify({fStatus,fType,sortBy,fMode}));}catch(e){}}
+function loadUi(){try{const u=JSON.parse(localStorage.getItem(KEY+"_ui"));if(u){fStatus=u.fStatus||fStatus;fType=u.fType||fType;sortBy=u.sortBy||sortBy;fMode=u.fMode==="read"?"read":"watch";return true;}}catch(e){}return false;}
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.items)return normalize(s);}catch(e){}return fresh();}
 let lastTop=null;
 function save(){
@@ -836,7 +844,8 @@ function render(){
 }
 
 /* ---------- LIST ---------- */
-let fStatus="watching",fType="all",sortBy="recent",query="",shown=60,animList=true;
+let fStatus="watching",fType="all",sortBy="recent",query="",shown=60,animList=true,fMode="watch";
+const inMode=it=>(it.type==="Manga")===(fMode==="read");
 const rollMem={};
 function rollTo(el,key,value){
   const prev=rollMem[key];rollMem[key]=value;const f=v=>Math.round(v).toLocaleString("en-US");
@@ -850,7 +859,8 @@ function mkChip(label,on,fn,count){
 }
 function filtered(){
   const q=norm(query);
-  let list=state.items.filter(it=>(fType==="all"||it.type===fType)&&(q?norm(it.title).includes(q)||norm(it.note).includes(q):(fStatus==="all"||it.status===fStatus)));
+  const ft=fMode==="read"||fType==="Manga"?"all":fType;
+  let list=state.items.filter(it=>q?norm(it.title).includes(q)||norm(it.note).includes(q):(inMode(it)&&(ft==="all"||it.type===ft)&&(fStatus==="all"||it.status===fStatus)));
   const recentTs=it=>Math.max(it.updatedAt||0,it.completedAt||0,it.startedAt||0,it.addedAt||0);
   if(sortBy==="recent")list.sort((a,b)=>recentTs(b)-recentTs(a));
   else if(sortBy==="az")list.sort((a,b)=>a.title.localeCompare(b.title));
@@ -858,21 +868,27 @@ function filtered(){
   return list;
 }
 function renderList(){
-  const n=k=>state.items.filter(i=>i.status===k).length;
-  const eps=state.items.reduce((a,it)=>a+(it.type!=="Movie"&&it.type!=="Manga"?watchedCount(it):0),0);
+  const read=fMode==="read",mine=state.items.filter(inMode);
+  const n=k=>mine.filter(i=>i.status===k).length;
+  const eps=mine.reduce((a,it)=>a+(it.type!=="Movie"?watchedCount(it):0),0);
+  $("modeSeg").querySelectorAll("button").forEach(b=>{b.classList.toggle("on",b.dataset.m===fMode);
+    b.querySelector("small").textContent=state.items.filter(i=>(i.type==="Manga")===(b.dataset.m==="read")).length;
+    b.onclick=()=>{if(fMode===b.dataset.m)return;fMode=b.dataset.m;shown=60;animList=true;
+      if(fStatus!=="all"&&!state.items.some(i=>inMode(i)&&i.status===fStatus))fStatus=["watching","plan","completed"].find(k=>state.items.some(i=>inMode(i)&&i.status===k))||"watching";
+      saveUi();renderList();if(fMode==="read")refreshChapters();};});
   $("strip").innerHTML=`
-    <div class="tile"><div class="v num" id="sW"></div><div class="k">Watching</div></div>
+    <div class="tile"><div class="v num" id="sW"></div><div class="k">${read?"Reading":"Watching"}</div></div>
     <div class="tile"><div class="v num" id="sC"></div><div class="k">Completed</div></div>
-    <div class="tile"><div class="v num" id="sE"></div><div class="k">Episodes logged</div></div>`;
-  rollTo($("sW"),"w",n("watching"));rollTo($("sC"),"c",n("completed"));rollTo($("sE"),"e",eps);
+    <div class="tile"><div class="v num" id="sE"></div><div class="k">${read?"Chapters read":"Episodes logged"}</div></div>`;
+  rollTo($("sW"),"w"+fMode,n("watching"));rollTo($("sC"),"c"+fMode,n("completed"));rollTo($("sE"),"e"+fMode,eps);
   updateCoverBar();
   const sc=$("statusChips");sc.innerHTML="";
-  [...STATUSES.map(s=>[s.k,s.label]),["all","All"]].forEach(([k,l])=>
-    sc.appendChild(mkChip(l,fStatus===k&&!query,()=>{fStatus=k;shown=60;animList=true;saveUi();renderList();},k==="all"?state.items.length:n(k))));
+  [...STATUSES.map(s=>[s.k,read&&s.mlabel?s.mlabel:s.label]),["all","All"]].forEach(([k,l])=>
+    sc.appendChild(mkChip(l,fStatus===k&&!query,()=>{fStatus=k;shown=60;animList=true;saveUi();renderList();},k==="all"?mine.length:n(k))));
   sc.classList.toggle("hidden",!!query);
   const tc=$("typeChips");tc.innerHTML="";
-  [["all","All types"],["Anime","Anime"],["Movie","Movies"],["Manga","Manga"]].forEach(([k,l])=>tc.appendChild(mkChip(l,fType===k,()=>{fType=k;shown=60;animList=true;saveUi();renderList();})));
-  const sep=document.createElement("div");sep.style.cssText="flex:0 0 1px;background:var(--line);margin:4px 2px";tc.appendChild(sep);
+  if(!read){[["all","All types"],["Anime","Anime"],["Movie","Movies"]].forEach(([k,l])=>tc.appendChild(mkChip(l,(fType==="Manga"?"all":fType)===k,()=>{fType=k;shown=60;animList=true;saveUi();renderList();})));
+  const sep=document.createElement("div");sep.style.cssText="flex:0 0 1px;background:var(--line);margin:4px 2px";tc.appendChild(sep);}
   [["recent","Recent"],["score","Score"],["az","A–Z"]].forEach(([k,l])=>tc.appendChild(mkChip("↕ "+l,sortBy===k,()=>{sortBy=k;animList=true;saveUi();renderList();})));
 
   renderNewBanner();
@@ -897,9 +913,10 @@ function row(it,fromPct){
   const st=stInfo(it.status),p=progress(it);
   let prog="";
   if(it.type!=="Movie"&&(it.status==="watching"||it.status==="hold"||(it.status==="plan"&&p.done))){
-    const pct=it.total?Math.min(100,p.done/it.total*100):0;
-    const txt=p.max?`${unit(it.type)} ${p.max}${it.total?" / "+it.total:""}${p.next?` · next ${p.next}`:""}`:`Not started${it.total?" · "+it.total+" "+unitLong(it.type):""}`;
-    prog=`<div class="prog">${it.total?`<div class="pbar"><i style="width:${fromPct!=null?fromPct:pct}%" data-to="${pct}"></i></div>`:""}
+    const T=it.total||(it.type==="Manga"&&it.ch&&it.ch.n)||0;
+    const pct=T?Math.min(100,p.done/T*100):0;
+    const txt=p.max?`${unit(it.type)} ${p.max}${T?" / "+T:""}${p.next?` · next ${p.next}`:""}`:`Not started${it.total?" · "+it.total+" "+unitLong(it.type):""}`;
+    prog=`<div class="prog">${T?`<div class="pbar"><i style="width:${fromPct!=null?fromPct:pct}%" data-to="${pct}"></i></div>`:""}
       <div class="ptxt num">${txt}${p.gap?` · <span class="warn">⚠ skipped ${unit(it.type).toLowerCase()} ${p.gap}</span>`:""}</div>${airTag(it)}</div>`;
   }
   const inTop=state.top.indexOf(it.id);
@@ -955,8 +972,8 @@ function plusOne(it,force){
   if(old&&(it.status===fStatus||query||fStatus==="all")){
     const nw=row(it,oldPct);old.parentElement.replaceWith(nw);
     const r2=nw.querySelector(".row");r2.classList.add("flash");const b=r2.querySelector(".plus1");if(b)b.classList.add("bump");
-    rollTo($("sE"),"e",state.items.reduce((a,x)=>a+(x.type!=="Movie"&&x.type!=="Manga"?watchedCount(x):0),0));
-    rollTo($("sW"),"w",state.items.filter(i=>i.status==="watching").length);
+    rollTo($("sE"),"e"+fMode,state.items.reduce((a,x)=>a+(inMode(x)&&x.type!=="Movie"?watchedCount(x):0),0));
+    rollTo($("sW"),"w"+fMode,state.items.filter(i=>inMode(i)&&i.status==="watching").length);
     if(detailId)renderDetail();
   }else render();
 }
@@ -1047,6 +1064,7 @@ function renderEpisodes(it){
     else if(aired!=null)line+=(line?"<br>":"")+`${aired} episodes out so far · next date not announced yet`;
     $("dEpSum").insertAdjacentHTML("beforeend",`<div class="airline">${line}</div>`);
   }
+  if(it.type==="Manga")$("dEpSum").insertAdjacentHTML("beforeend",chLine(it));
   const schedMax=it.air&&it.air.sched&&it.air.sched.length?Math.max(...it.air.sched.map(x=>x[0])):0;
   const count=it.total||Math.max(12,Math.ceil((Math.max(p.max,schedMax,aired||0)+(schedMax?0:12))/12)*12);
   const per=100,pages=Math.ceil(count/per);
@@ -1150,6 +1168,7 @@ async function aniQuery(query,variables){
 }
 // episodes out right now (the saved schedule keeps counting while offline)
 function airedNow(it){
+  if(it.type==="Manga")return it.ch&&it.ch.n?it.ch.n:null;
   const a=it.air;if(!a)return null;
   let n=a.aired==null?0:a.aired;const now=Date.now()/1000;
   (a.sched||[]).forEach(([ep,at])=>{if(at<=now&&ep>n)n=ep;});
@@ -1162,7 +1181,7 @@ function airNext(it){
 }
 function airAt(it,ep){const a=it.air;if(!a)return null;const f=(a.sched||[]).find(x=>x[0]===ep);return f?f[1]:null;}
 function newCount(it){
-  if(it.status!=="watching"||!it.air)return 0;
+  if(it.status!=="watching"||!(it.type==="Manga"?it.ch:it.air))return 0;
   const aired=airedNow(it);const p=progress(it);
   if(!aired)return 0;
   return p.max?Math.max(0,aired-p.max):0;
@@ -1178,6 +1197,7 @@ function whenTxt(at){
 }
 function shortDay(at){const d=new Date(at*1000);return d.getDate()+"/"+(d.getMonth()+1);}
 function airTag(it){
+  if(it.type==="Manga")return chTag(it);
   if(!it.air||it.type!=="Anime")return "";
   const nc=newCount(it),p=progress(it),aired=airedNow(it),nx=airNext(it);
   if(nc>0)return `<span class="airtag new">🆕 ${nc>1?nc+" new episodes":"Ep "+(p.max+1)+" is out"}</span>`;
@@ -1244,14 +1264,14 @@ function swipeAway(el,done){
 function openBell(){
   const fresh=state.items.filter(it=>newCount(it)>0).sort((a,b)=>(unseenNew(b)-unseenNew(a))||newCount(b)-newCount(a));
   const soon=state.items.filter(it=>it.type==="Anime"&&(it.status==="watching"||it.status==="plan"||it.status==="hold")&&airNext(it))
-    .map(it=>({it,nx:airNext(it)})).sort((a,b)=>a.nx.at-b.nx.at);
+    .map(it=>({it,nx:airNext(it)})).concat(state.items.filter(it=>chTracked(it)&&chNext(it)).map(it=>({it,nx:{ep:it.ch.n+1,at:chNext(it),est:true}}))).sort((a,b)=>a.nx.at-b.nx.at);
   const item=(it,sub,dot)=>`<div class="nitem" data-id="${it.id}">${dot?'<span class="ndot"></span>':''}${coverHtml(it)}<div style="flex:1;min-width:0"><div class="nt">${escapeHtml(it.title)}</div><div class="ns">${sub}</div></div></div>`;
   $("bellBody").innerHTML=
-    `<h4>New episodes</h4><div class="nlist">${fresh.length?fresh.map(it=>{const p=progress(it),nc=newCount(it);
-      return item(it,`<span class="g">🆕 ${nc>1?"Ep "+(p.max+1)+"–"+airedNow(it)+" · "+nc+" to watch":"Ep "+(p.max+1)+" is out"}</span>`,unseenNew(it));}).join("")
+    `<h4>New episodes &amp; chapters</h4><div class="nlist">${fresh.length?fresh.map(it=>{const p=progress(it),nc=newCount(it);
+      return item(it,`<span class="g">🆕 ${nc>1?unit(it.type)+" "+(p.max+1)+"–"+airedNow(it)+" · "+nc+" to "+(it.type==="Manga"?"read":"watch"):unit(it.type)+" "+(p.max+1)+" is out"}</span>`,unseenNew(it));}).join("")
       :`<div class="mini">You're all caught up ✓</div>`}</div>`+
-    `<h4>Coming up</h4><div class="nlist">${soon.length?soon.map(({it,nx})=>item(it,`Ep ${nx.ep} · ${whenTxt(nx.at)} · <span class="r">${inTxt(nx.at)}</span>`)).join("")
-      :`<div class="mini">No upcoming episodes announced for your shows.</div>`}</div>`+
+    `<h4>Coming up</h4><div class="nlist">${soon.length?soon.map(({it,nx})=>item(it,`${unit(it.type)} ${nx.ep} · ${nx.est?"around "+whenTxt(nx.at).split(",")[0]:whenTxt(nx.at)} · <span class="r">${inTxt(nx.at)}</span>`)).join("")
+      :`<div class="mini">Nothing announced yet.</div>`}</div>`+
     `<div class="mini" style="margin-top:12px">Times are when it airs in Japan, shown in your time. Subbed versions can come a bit later.</div>`;
   $("bellBody").querySelectorAll(".nitem").forEach(n=>n.onclick=()=>{closeSheet($("bellSheet"));setTimeout(()=>openDetail(n.dataset.id),200);});
   openSheet($("bellSheet"));
@@ -1264,14 +1284,15 @@ function syncNative(){
   const B=window.AndroidBridge;if(!B||!B.hasAiring)return;
   const list=state.items.filter(it=>it.ani&&it.status==="watching"&&it.type==="Anime").map(it=>{const n=airNext(it);return {id:it.ani,title:it.title,aired:airedNow(it)==null?-1:airedNow(it),at:n?n.at:0};});
   try{B.setAiring(JSON.stringify(list));}catch(e){}
+  try{if(B.setReading)B.setReading(JSON.stringify(state.items.filter(it=>it.mu&&it.status==="watching"&&it.type==="Manga").map(it=>({mu:String(it.mu),title:it.title,n:it.ch?it.ch.n:-1}))));}catch(e){}
 }
 function renderNewBanner(){
   const box=$("newEps");if(!box)return;
   updateBell();
   const fresh=state.items.filter(unseenNew).sort((a,b)=>newCount(b)-newCount(a));
   if(!fresh.length||query){box.innerHTML="";return;}
-  box.innerHTML=`<div class="newbanner"><div class="nbhead"><b>🔔 New episodes out</b><button class="nbhide">Hide all</button></div>${fresh.slice(0,5).map(it=>{const p=progress(it),nc=newCount(it);
-    return `<div class="nb" data-id="${it.id}">${escapeHtml(it.title.length>38?it.title.slice(0,38)+"…":it.title)}<span>${nc>1?"Ep "+(p.max+1)+"–"+airedNow(it):"Ep "+(p.max+1)}</span></div>`;}).join("")}
+  box.innerHTML=`<div class="newbanner"><div class="nbhead"><b>🔔 New for you</b><button class="nbhide">Hide all</button></div>${fresh.slice(0,5).map(it=>{const p=progress(it),nc=newCount(it);
+    return `<div class="nb" data-id="${it.id}">${escapeHtml(it.title.length>38?it.title.slice(0,38)+"…":it.title)}<span>${unit(it.type)} ${nc>1?(p.max+1)+"–"+airedNow(it):(p.max+1)}</span></div>`;}).join("")}
     <div class="swhint">Swipe one away to hide it — it stays in 🔔</div></div>`;
   box.querySelector(".nbhide").onclick=()=>{fresh.forEach(markSeen);save();hideBanner();};
   box.querySelectorAll(".nb").forEach(n=>{
@@ -1290,7 +1311,7 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 function renderAirSettings(){
   const info=$("airInfo"),bx=$("airBtns");if(!info)return;
   const B=window.AndroidBridge;const tracked=state.items.filter(it=>it.ani&&it.status==="watching"&&it.type==="Anime").length;
-  const base=`The app checks airing dates for the ${tracked} show${tracked===1?"":"s"} you're watching (from AniList). Episodes that haven't aired show in red with their date.`;
+  const base=`The app checks airing dates for the ${tracked} show${tracked===1?"":"s"} you're watching (from AniList). Episodes that haven't aired show in red with their date. Chapters for the manga and manhwa you're reading come from MangaUpdates${muNative()?"":" — your phone app checks them and they sync here"}.`;
   bx.innerHTML="";
   const btn=(t,f,cls)=>{const b=document.createElement("button");b.className="ghostbtn"+(cls?" "+cls:"");b.textContent=t;b.onclick=f;bx.appendChild(b);return b;};
   if(B&&B.hasAiring){
@@ -1386,7 +1407,7 @@ async function malPickFor(it){
     const res=await lookup(cleanForSearch(it.title),it.type==="Manga"?"manga":"anime");
     box.innerHTML=res.length?`<div class="mini" style="margin:0 0 8px">Pick the right one:</div>`:`<div class="mini">No matches found. Try editing the title first.</div>`;
     res.slice(0,6).forEach(m=>box.appendChild(malRow(m,()=>{
-      it.cover=m.cover||it.cover;it.mal=m.mal;it.ani=m.ani||null;it.aniTried=true;delete it.air;if(m.total)it.total=m.total;setTimeout(()=>refreshAiring(true),300);if(it.type!=="Manga"&&m.type==="Movie")it.type="Movie";
+      it.cover=m.cover||it.cover;it.mal=m.mal;it.ani=m.ani||null;it.aniTried=true;delete it.air;delete it.mu;delete it.ch;delete it.muTried;if(m.total)it.total=m.total;setTimeout(()=>refreshAiring(true),300);if(it.type!=="Manga"&&m.type==="Movie")it.type="Movie";
       it.malTried=true;touch(it);finishCheck(it);save();renderDetail();toast("Cover updated");
     })));
   }catch(e){box.innerHTML=`<div class="mini">${malError(e)}</div>`;}
@@ -1395,6 +1416,7 @@ async function malPickFor(it){
 /* ---------- ADD ---------- */
 let addKind="anime",addAs="watching",addTimer=null,addSeq=0;
 function openAdd(){
+  if(view==="list"){addKind=fMode==="read"?"manga":"anime";const ak=$("addKind");if(ak)ak.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.k===addKind));}
   $("addQ").value="";$("addResults").innerHTML=`<div class="mini" style="margin-top:8px">Type a name to find it with its cover, or add it yourself.</div>`;
   renderAddAs();openSheet($("addSheet"));setTimeout(()=>$("addQ").focus(),350);
 }
@@ -1971,6 +1993,88 @@ $("aiIn").addEventListener("input",aiGrow);
 $("aiClear").onclick=()=>{if(!aiMsgs.length)return;if(confirm("Start a new chat?")){aiMsgs=[];aiSaveChat();renderAI();}};
 $("aiKeyBtn").onclick=()=>{const k=prompt("Your Gemini API key (leave empty to remove it):",state.aiKey||"");if(k===null)return;state.aiKey=k.trim();save();renderAI();};
 
+/* ---------- chapters for manga / manhwa (MangaUpdates) ---------- */
+const MU="https://api.mangaupdates.com/v1/";let muSeq=0,muWait={},muDead=false,muLast=0,chBusy=false;
+window.__mu=(k,st,txt)=>{const w=muWait[k];if(!w)return;delete muWait[k];if(st>=200&&st<300){try{w.ok(JSON.parse(txt));}catch(e){w.no(e);}}else w.no(new Error("mu "+st));};
+const muNative=()=>!!(window.AndroidBridge&&window.AndroidBridge.muFetch);
+async function muCall(method,path,body){
+  const wait=1200-(Date.now()-muLast);if(wait>0)await new Promise(r=>setTimeout(r,wait));muLast=Date.now();
+  if(muNative())return new Promise((ok,no)=>{const k="m"+(++muSeq);muWait[k]={ok,no};
+    setTimeout(()=>{if(muWait[k]){delete muWait[k];no(new Error("timeout"));}},20000);
+    window.AndroidBridge.muFetch(k,method,path,body?JSON.stringify(body):"");});
+  if(muDead)throw new Error("blocked");
+  try{const r=await fetch(MU+path,{method,headers:body?{"content-type":"application/json"}:{},body:body?JSON.stringify(body):undefined});
+    if(!r.ok)throw new Error("mu "+r.status);return await r.json();}
+  catch(e){if(e instanceof TypeError)muDead=true;throw e;}
+}
+function chTracked(it){return it.type==="Manga"&&(it.status==="watching"||it.status==="plan"||it.status==="hold");}
+function chNum(s){const m=String(s==null?"":s).match(/\d+(\.\d+)?/g);return m?Math.floor(Math.max(...m.map(Number))):0;}
+async function muFind(it){
+  for(const q of [it.title,it.alt].filter(Boolean)){
+    const j=await muCall("POST","series/search",{search:q,perpage:8});
+    let rs=((j&&j.results)||[]).filter(x=>x&&x.record);if(!rs.length)continue;
+    const comics=rs.filter(x=>!/novel/i.test(x.record.type||""));if(comics.length)rs=comics;
+    const n=norm(q),ex=rs.find(x=>norm(x.record.title)===n||norm(x.hit_title)===n);
+    return (ex||rs[0]).record.series_id;
+  }
+  return null;
+}
+async function chLoad(it){
+  const s=await muCall("GET","series/"+it.mu);
+  let n=chNum(s.latest_chapter),t=0,src="",gap=0;
+  try{
+    const r=await muCall("POST","releases/search",{search:String(it.mu),search_type:"series",perpage:30});
+    let rows=((r&&r.results)||[]).filter(x=>x&&x.record).filter(x=>{const m=x.metadata&&x.metadata.series;return m&&m.series_id?String(m.series_id)===String(it.mu):norm(x.record.title)===norm(s.title);})
+      .map(x=>({c:chNum(x.record.chapter),d:Date.parse((x.record.release_date||"")+"T12:00:00Z")/1000||0,g:(x.record.groups||[]).map(g=>g.name||"").join(" ")})).filter(x=>x.c&&x.d);
+    const asura=rows.filter(x=>/asura/i.test(x.g));
+    if(asura.length){rows=asura;src="Asura";n=Math.max(...rows.map(x=>x.c));}
+    else if(rows.length)n=Math.max(n,...rows.map(x=>x.c));
+    const top=rows.filter(x=>x.c===n).sort((a,b)=>a.d-b.d)[0];if(top)t=top.d;
+    const days=[...new Set(rows.map(x=>x.d))].sort((a,b)=>b-a).slice(0,7);
+    if(days.length>=3){const g=[];for(let i=0;i<days.length-1;i++)g.push((days[i]-days[i+1])/86400);g.sort((a,b)=>a-b);gap=Math.max(1,Math.round(g[Math.floor(g.length/2)]));}
+  }catch(e){}
+  if(!n)return;
+  it.ch={n,t,gap,done:!!s.completed,src,at:Date.now()};
+  if(s.completed&&!it.total)it.total=n;
+}
+async function refreshChapters(force){
+  if(chBusy||!navigator.onLine||(!muNative()&&muDead))return;
+  const now=Date.now(),stale=force?5*60000:3*3600000;
+  const items=state.items.filter(chTracked).filter(it=>!it.ch||now-(it.ch.at||0)>stale).sort((a,b)=>((a.ch&&a.ch.at)||0)-((b.ch&&b.ch.at)||0)).slice(0,30);
+  if(!items.length){syncNative();return;}
+  chBusy=true;let did=0;
+  for(const it of items){
+    try{
+      if(!it.mu){if(it.muTried&&!force)continue;it.muTried=true;it.mu=await muFind(it);if(!it.mu){save();continue;}}
+      await chLoad(it);did++;save();
+    }catch(e){if(muDead)break;}
+  }
+  chBusy=false;
+  if(did){if(view==="list")renderList();else updateBell();if(detailId)renderDetail();}
+  syncNative();
+}
+function chNext(it){const c=it.ch;if(!c||c.done||!c.gap||!c.t)return null;const at=c.t+c.gap*86400;return at>Date.now()/1000?at:null;}
+function agoTxt(t){const d=Math.floor((Date.now()/1000-t)/86400);return d<=0?"today":d===1?"yesterday":d<60?d+" days ago":Math.round(d/30)+" months ago";}
+function chTag(it){
+  const c=it.ch;if(!c||!c.n)return "";const nc=newCount(it),p=progress(it);
+  if(nc>0)return `<span class="airtag new">🆕 ${nc>1?nc+" new chapters":"Ch "+(p.max+1)+" is out"}</span>`;
+  if(c.done)return `<span class="airtag done">✅ Finished · ${c.n} chapters</span>`;
+  const nx=chNext(it);
+  if(nx)return `<span class="airtag soon">⏳ Ch ${c.n+1} expected ${inTxt(nx)}</span>`;
+  return `<span class="airtag done">Latest: Ch ${c.n}${c.t?" · "+agoTxt(c.t):""}</span>`;
+}
+function chLine(it){
+  const c=it.ch;if(!c||!c.n)return "";const nc=newCount(it),p=progress(it),nx=chNext(it);
+  let line=nc>0?`🆕 <b>Ch ${p.max+1}${nc>1?"–"+c.n:""}</b> ${nc>1?"are":"is"} out and waiting for you`:`Latest chapter: <b>${c.n}</b>${c.t?" · came out "+agoTxt(c.t):""}`;
+  if(c.done)line+=`<br>✅ Finished · ${c.n} chapters`;
+  else if(nx)line+=`<br>📅 Ch ${c.n+1} expected around <b>${whenTxt(nx).split(",")[0]}</b> <span class="red">(${inTxt(nx)})</span> — a guess from past releases`;
+  else if(c.gap)line+=`<br>⏳ Ch ${c.n+1} is due any day`;
+  return `<div class="airline">${line}<br><span style="opacity:.6">From MangaUpdates${c.src?" · "+c.src+" releases":""}</span></div>`;
+}
+setInterval(()=>{if(document.visibilityState==="visible")refreshChapters();},20*60000);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshChapters();});
+setTimeout(()=>refreshChapters(),5000);
+
 window.appBack=function(){
   if($("liveSheet").classList.contains("on")){closeSheet($("liveSheet"));return true;}
   if($("addSheet").classList.contains("on")){closeSheet($("addSheet"));return true;}
@@ -2012,7 +2116,8 @@ function mergeAnime(a,b){
   const del={...B.deleted};for(const k in A.deleted)del[k]=Math.max(del[k]||0,A.deleted[k]);
   const bMap=new Map(B.items.map(i=>[i.id,i])),had=new Set(),out=[];
   const pick=(x,y)=>{if(!y)return x;if(!x)return y;const w=(y.updatedAt||0)>(x.updatedAt||0)?y:x,o=w===x?y:x,r={...w};
-    ["cover","ani","mal","air","total"].forEach(k=>{if(r[k]==null&&o[k]!=null)r[k]=o[k];});return r;};
+    ["cover","ani","mal","air","total","mu","ch"].forEach(k=>{if(r[k]==null&&o[k]!=null)r[k]=o[k];});
+    if(o.ch&&r.ch&&(o.ch.at||0)>(r.ch.at||0))r.ch=o.ch;return r;};
   A.items.forEach(x=>{had.add(x.id);out.push(pick(x,bMap.get(x.id)));});
   B.items.forEach(y=>{if(!had.has(y.id))out.push(y);});
   const items=out.filter(i=>!(del[i.id]&&del[i.id]>=(i.updatedAt||0)));
