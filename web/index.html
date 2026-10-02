@@ -337,6 +337,17 @@
   .tdel,.rowdel{width:32px;height:32px;padding:0;border-radius:10px;display:grid;place-items:center;color:var(--muted2);}
   .tdel svg,.rowdel svg{width:17px;height:17px;display:block;}
   .tdel:hover,.rowdel:hover{background:rgba(255,107,91,.12);color:#ff6b5b;}
+
+  .wcard.pic::after{display:none;}
+  .wcard.pic{box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);}
+  .looklbl{font-size:11px;color:var(--muted);margin:6px 0 6px;}
+  .skins{display:flex;gap:8px;flex-wrap:wrap;}
+  .skin{width:40px;height:28px;border-radius:9px;border:2px solid transparent;cursor:pointer;padding:0;}
+  .skin.on{border-color:#fff;box-shadow:0 0 0 2px var(--brand);}
+  .picprev{margin-top:10px;border-radius:16px;height:110px;display:flex;align-items:flex-end;padding:12px 14px;font-weight:800;font-size:15px;color:#fff;}
+
+  .chip.cardchip{display:inline-flex;align-items:center;gap:9px;padding-left:8px;}
+  .cthumb{width:38px;height:24px;flex:0 0 38px;border-radius:5px;box-shadow:0 1px 4px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.14);}
 </style>
 </head>
 <body>
@@ -503,6 +514,7 @@
   <div class="tuttitle" id="tutT"></div><div class="tuttext" id="tutX"></div>
   <div class="tutbtns"><button id="tutPrev"></button><button id="tutNextB" class="main"></button></div>
   <button id="tutSkipB" class="tutskip"></button></div></div>
+<input type="file" id="cardImg" accept="image/*" style="display:none">
 <input type="file" id="importFile" accept="application/json,.json">
 <div class="offbar hidden" id="offbar" data-t="offline"></div>
 <div id="okPop"><div>✓</div></div>
@@ -811,6 +823,7 @@ en:{
   csvHead:["Date","Time","Type","Category","Reason","Card","Amount (ILS)"],csvInc:"Income",csvExp:"Expense",
   billDupQ:(n,x,d)=>`${n} is due — but you already typed in ${x} yourself (${d}).\n\nIs that this month's payment?\n\nOK = yes, don't add it again\nCancel = no, add the bill too`,
   billSkipped:n=>`${n}: already logged by you — not added twice`,
+  cardStyle:"Card look",cardPic:"🖼 Use my own picture",cardPicDel:"Remove",
   howPay:"How do you pay?",payCash:"💵 Cash only",payCard:"💳 Credit card too",
   cashOnlyS:"💵 Cash only (no credit card)",cashOnlyMini:"Turn on if you don't use a credit card — the app gets simpler.",
   incomeIn:m=>`Received in ${m}`,incomeSub:"pension, salary and other income",
@@ -889,6 +902,7 @@ he:{
   csvHead:["תאריך","שעה","סוג","קטגוריה","סיבה","כרטיס","סכום (₪)"],csvInc:"הכנסה",csvExp:"הוצאה",
   billDupQ:(n,x,d)=>`הגיע מועד ${n} — אבל כבר רשמת ${x} בעצמך (${d}).\n\nזה התשלום של החודש?\n\nאישור = כן, לא להוסיף שוב\nביטול = לא, להוסיף גם את החיוב`,
   billSkipped:n=>`${n}: כבר נרשם על ידך — לא נוסף פעמיים`,
+  cardStyle:"מראה הכרטיס",cardPic:"🖼 תמונה משלי",cardPicDel:"הסרה",
   howPay:"איך משלמים?",payCash:"💵 רק מזומן",payCard:"💳 גם כרטיס אשראי",
   cashOnlyS:"💵 רק מזומן (בלי כרטיס אשראי)",cashOnlyMini:"הפעילו אם אין כרטיס אשראי — האפליקציה תהיה פשוטה יותר.",
   incomeIn:m=>`התקבל ב${m}`,incomeSub:"פנסיה, משכורת והכנסות אחרות",
@@ -967,6 +981,7 @@ ru:{
   csvHead:["Дата","Время","Тип","Категория","Описание","Карта","Сумма (₪)"],csvInc:"Доход",csvExp:"Расход",
   billDupQ:(n,x,d)=>`Пора платить «${n}» — но вы уже сами записали ${x} (${d}).\n\nЭто платёж за этот месяц?\n\nОК = да, не добавлять ещё раз\nОтмена = нет, добавить и платёж`,
   billSkipped:n=>`${n}: уже записано вами — второй раз не добавлено`,
+  cardStyle:"Вид карты",cardPic:"🖼 Своя картинка",cardPicDel:"Убрать",
   howPay:"Как вы платите?",payCash:"💵 Только наличные",payCard:"💳 Есть кредитная карта",
   cashOnlyS:"💵 Только наличные (без кредитной карты)",cashOnlyMini:"Включите, если у вас нет кредитной карты — приложение станет проще.",
   incomeIn:m=>`Получено: ${m}`,incomeSub:"пенсия, зарплата и другие доходы",
@@ -993,6 +1008,14 @@ const colorFor=k=>(CAT_STYLE[k]||CAT_STYLE.Other)[1];
 const CARD_GRADIENTS=["linear-gradient(135deg,#3a2fb0,#7c6cf0)","linear-gradient(135deg,#0f7a63,#1fbf9a)",
   "linear-gradient(135deg,#a3410f,#f5893c)","linear-gradient(135deg,#8f1f5c,#e0508f)"];
 function id(){return Math.random().toString(36).slice(2)+Date.now().toString(36);}
+/* card looks: a colour style, or the user's own picture (kept on their device / private cloud save) */
+const CARD_SKINS={violet:CARD_GRADIENTS[0],emerald:CARD_GRADIENTS[1],sunset:CARD_GRADIENTS[2],rose:CARD_GRADIENTS[3],
+  black:"linear-gradient(135deg,#08080b,#26262e)",navy:"linear-gradient(135deg,#061542,#0e3a94)",
+  sky:"linear-gradient(135deg,#0b5fa8,#27b5e8)",gold:"linear-gradient(135deg,#7a5a10,#e0b23c)"};
+function cardBg(c,i){
+  if(c.img)return `linear-gradient(rgba(8,8,14,.12),rgba(8,8,14,.5)),url("${c.img}") center/cover no-repeat`;
+  return CARD_SKINS[c.skin]||CARD_GRADIENTS[i%CARD_GRADIENTS.length];
+}
 
 /* ---------- storage ---------- */
 function guessLang(){const l=navigator.language||"";return /^he|^iw/i.test(l)?"he":/^ru|^uk|^be/i.test(l)?"ru":"en";}
@@ -1261,7 +1284,7 @@ function renderCarousel(){
       pace=p.status==="over"?t("limitReset",cur(c.limit),resetTxt):t("perDay",cur(Math.floor(p.perDay)),p.daysLeft,resetTxt);
     }
     const el=document.createElement("div");el.className="wcard";
-    el.style.background=CARD_GRADIENTS[i%CARD_GRADIENTS.length];
+    el.style.background=cardBg(c,i);if(c.img)el.classList.add("pic");
     el.innerHTML=`
       <div class="top"><span class="cname">${escapeHtml(c.name)}</span><span class="pill">${pill}</span></div>
       <div style="position:relative;z-index:1">
@@ -1749,7 +1772,10 @@ function renderCardPickChips(){
   state.cards.forEach(c=>{
     const p=cardPace(c);
     const label=p.status==="none"?"💳 "+cardName(c):t("leftChip",cardName(c),money(p.rem));
-    w.appendChild(mkChip(label,pickCard===c.id,()=>{pickCard=c.id;renderCardPickChips();}));
+    const ch=mkChip(label.replace("💳 ",""),pickCard===c.id,()=>{pickCard=c.id;renderCardPickChips();});
+    const th=document.createElement("span");th.className="cthumb";
+    th.style.background=c.img?`url("${c.img}") center/cover no-repeat`:cardBg(c,state.cards.indexOf(c));
+    ch.classList.add("cardchip");ch.prepend(th);w.appendChild(ch);
   });
 }
 function setCardOn(v){cardOn=v;$("cardSw").classList.toggle("on",cardOn);renderCardPickChips();}
@@ -1837,7 +1863,14 @@ function renderCardEditor(){
       <div class="r1"><label style="flex:1">${t("name")}<input class="field" value="${escapeHtml(c.name)}"></label>
         <button class="rowdel" aria-label="✕"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10M17 7 7 17"/></svg></button></div>
       <div class="r1"><label>${t("limit")}<input class="field num" type="number" inputmode="decimal" value="${c.limit}"></label>
-        <label>${t("resetDay")}<input class="field num" type="number" inputmode="numeric" min="1" max="31" value="${c.resetDay}"></label></div>`;
+        <label>${t("resetDay")}<input class="field num" type="number" inputmode="numeric" min="1" max="31" value="${c.resetDay}"></label></div>
+      <div class="looklbl">${t("cardStyle")}</div>
+      <div class="skins">${Object.keys(CARD_SKINS).map(k=>`<button class="skin${!c.img&&(c.skin===k||(!c.skin&&CARD_SKINS[k]===CARD_GRADIENTS[state.cards.indexOf(c)%CARD_GRADIENTS.length]))?" on":""}" data-k="${k}" style="background:${CARD_SKINS[k]}"></button>`).join("")}</div>
+      <div class="r1" style="margin-top:8px"><button class="ghostbtn picbtn" style="margin:0">${t("cardPic")}</button>${c.img?`<button class="ghostbtn picdel" style="margin:0;flex:0 0 auto;width:auto;padding-left:14px;padding-right:14px">${t("cardPicDel")}</button>`:""}</div>
+      ${c.img?`<div class="picprev" style="background:${cardBg(c,0)}"><span>${escapeHtml(c.name)}</span></div>`:""}`;
+    row.querySelectorAll(".skin").forEach(b=>b.onclick=()=>{c.skin=b.dataset.k;delete c.img;save();renderCardEditor();renderEverything();});
+    row.querySelector(".picbtn").onclick=()=>pickCardImage(c);
+    if(row.querySelector(".picdel"))row.querySelector(".picdel").onclick=()=>{delete c.img;save();renderCardEditor();renderEverything();};
     const [nameI,limI,dayI]=row.querySelectorAll("input");
     nameI.oninput=()=>{c.name=nameI.value||t("defaultCard");save();};
     limI.oninput=()=>{c.limit=Math.max(0,parseFloat(limI.value)||0);save();};
@@ -1852,6 +1885,18 @@ function renderCardEditor(){
     };
     w.appendChild(row);
   });
+}
+function pickCardImage(c){
+  const f=$("cardImg");f.value="";
+  f.onchange=()=>{const file=f.files[0];if(!file)return;const rd=new FileReader();
+    rd.onload=()=>{const im=new Image();im.onload=()=>{
+      // shrink to card size so it stays small enough to save
+      const W=640,H=404,cv=document.createElement("canvas");cv.width=W;cv.height=H;const g=cv.getContext("2d");
+      const sc=Math.max(W/im.width,H/im.height),w=im.width*sc,h=im.height*sc;g.drawImage(im,(W-w)/2,(H-h)/2,w,h);
+      c.img=cv.toDataURL("image/jpeg",.82);save();renderCardEditor();renderEverything();toast(t("saved"));};
+      im.onerror=()=>toast(t("cantSave"));im.src=rd.result;};
+    rd.readAsDataURL(file);};
+  f.click();
 }
 $("addCard").onclick=()=>{state.cards.push({id:id(),name:t("newCard"),limit:1000,resetDay:1});save();renderCardEditor();};
 function renderBillEditor(){
