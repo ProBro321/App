@@ -455,6 +455,7 @@ try{if(!window.AndroidBridge&&!/[?&]stay/.test(location.search)&&matchMedia("(mi
   <div class="view hidden" id="view-live">
     <div class="topbar"><h1>Anime <span>Live</span></h1><button class="iconbtn" id="gear2" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.54 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9c.26.6.85 1 1.51 1H21a2 2 0 1 1 0 4h-.09c-.66 0-1.25.4-1.51 1z"/></svg></button></div>
     <div class="search"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></span><input id="lq" type="search" placeholder="Search any anime…" autocomplete="off"><button id="lqClear" class="hidden" aria-label="Clear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10M17 7 7 17"/></svg></button></div>
+    <div class="seg" id="liveKindSeg" style="margin:0 0 12px;max-width:420px"><button data-k="anime">Anime</button><button data-k="tv">TV shows</button></div>
     <div class="chiprow" id="liveSeasons"></div>
     <div class="chiprow" id="liveFilter"></div>
     <div id="liveBody"></div>
@@ -1799,15 +1800,21 @@ function startAt(x){const s=x.start||{};if(!s.year||!s.month||!s.day)return null
 function startTxt(x){const s=x.start||{};const M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   if(!s.year)return "Date not announced";if(!s.month)return String(s.year);if(!s.day)return M[s.month-1]+" "+s.year;return s.day+" "+M[s.month-1]+" "+s.year;}
 function fmtName(f){return {TV:"TV",TV_SHORT:"TV short",MOVIE:"Movie",OVA:"OVA",ONA:"ONA",SPECIAL:"Special",MUSIC:"Music"}[f]||f||"";}
-function inMine(x){return state.items.find(i=>(x.ani&&i.ani===x.ani)||(x.mal&&i.mal===x.mal)||norm(i.title)===norm(x.title));}
+function inMine(x){if(x.tvm)return state.items.find(i=>i.live&&(i.tvm===x.tvm||norm(i.title)===norm(x.title)));return state.items.find(i=>(x.ani&&i.ani===x.ani)||(x.mal&&i.mal===x.mal)||norm(i.title)===norm(x.title));}
 // what to count down to: next episode, else the premiere date
 function liveTarget(x){
+  if(x.next&&x.next.label)return {at:x.next.at,label:x.next.label};
   if(x.at)return {at:x.at,label:"Ep "+x.ep};
   if(x.next)return {at:x.next.at,label:x.next.ep===1?"Premiere":"Ep "+x.next.ep};
   const sa=startAt(x);if(sa&&sa>Date.now()/1000)return {at:sa,label:"Premiere",approx:true};
   return null;
 }
 function renderLive(anim){
+  $("liveKindSeg").querySelectorAll("button").forEach(b=>{b.classList.toggle("on",b.dataset.k===liveKind);b.onclick=()=>{if(liveKind===b.dataset.k)return;liveKind=b.dataset.k;try{localStorage.setItem("animelist_livekind",liveKind);}catch(e){}
+    $("lq").value="";liveQ="";liveSR={q:"",list:[],err:""};$("lqClear").classList.add("hidden");renderLive(true);};});
+  $("lq").placeholder=liveKind==="tv"?"Search any TV show…":"Search any anime…";
+  try{$("view-live").querySelector("h1").firstChild.textContent=liveKind==="tv"?"TV ":"Anime ";}catch(e){}
+  if(liveKind==="tv"&&!liveQ){$("liveSeasons").classList.remove("hidden");$("liveFilter").classList.remove("hidden");renderLiveTV(anim);return;}
   if(!liveTab)liveTab="trend";
   $("liveSeasons").classList.toggle("hidden",!!liveQ);$("liveFilter").classList.toggle("hidden",!!liveQ);
   if(liveQ){renderLiveSearch(anim);return;}
@@ -1863,12 +1870,17 @@ function liveCard(x,i,anim,extra){
       const box=t?`<div class="cdbox"><div class="cl">${t.label} in</div><div class="cd" data-at="${t.at}">${cdText(t.at)}</div></div>`
         :`<div class="cdbox done"><div class="cd">${x.st==="FINISHED"?"✓ Finished":x.st==="RELEASING"?"Airing":startTxt(x)}</div></div>`;
       return `<div class="lcard" data-k="${i}" style="--i:${anim?Math.min(i,16):0}">${coverHtml({title:x.title,cover:x.cover})}
-        <div class="lcd">${extra?`<span class="rank${extra.rank<=3?" top":""}">${extra.rank}</span>`:`<span class="ltag">${fmtName(x.format)}${x.eps?" · "+x.eps+" ep":""}</span>`}${mine?`<span class="ltag mine">In list</span>`:x.score?`<span class="ltag">★ ${(x.score/10).toFixed(1)}</span>`:""}</div>
+        <div class="lcd">${extra?`<span class="rank${extra.rank<=3||extra.rank==="NEW"?" top":""}">${extra.rank}</span>`:`<span class="ltag">${fmtName(x.format)}${x.eps?" · "+x.eps+" ep":""}</span>`}${mine?`<span class="ltag mine">In list</span>`:x.score?`<span class="ltag">★ ${(x.score/10).toFixed(1)}</span>`:""}</div>
         <div class="linfo"><div class="lt">${escapeHtml(x.title)}</div><div class="ls">${extra?escapeHtml(extra.sub):escapeHtml(x.genres.slice(0,2).join(" · "))||startTxt(x)}</div>${box}</div></div>`;
 }
 /* search any anime on AniList */
 let liveQ="",liveSR={q:"",list:[],err:""},liveST=null;
 async function runLiveSearch(q){
+  if(liveKind==="tv"){
+    try{const r=await fetch("https://api.tvmaze.com/search/shows?q="+encodeURIComponent(q));if(!r.ok)throw new Error("down");const list=(await r.json()).map(x=>x.show).filter(Boolean).map(tvShowMap);
+      if(q!==liveQ)return;liveSR={q,list,err:""};}catch(e){if(q!==liveQ)return;liveSR={q,list:[],err:"Can't search right now — check your internet."};}
+    if(view==="live")renderLive(true);return;
+  }
   try{
     const j=await aniQuery(`query($s:String){Page(perPage:30){media(search:$s,type:ANIME,isAdult:false,sort:[SEARCH_MATCH,POPULARITY_DESC]){${LIVE_FIELDS}}}}`,{s:q});
     if(q!==liveQ)return;liveSR={q,list:((j.data&&j.data.Page&&j.data.Page.media)||[]).map(liveMap),err:""};
@@ -1880,7 +1892,7 @@ function renderLiveSearch(anim){
   if(liveSR.q!==liveQ){B.innerHTML=`<div class="spinner" style="margin:40px auto"></div>`;return;}
   if(liveSR.err){B.innerHTML=`<div class="empty">${liveSR.err}</div>`;return;}
   const list=liveSR.list;
-  if(!list.length){B.innerHTML=`<div class="empty">No anime found for “${escapeHtml(liveQ)}”.<br>Try the Japanese or English name.</div>`;return;}
+  if(!list.length){B.innerHTML=`<div class="empty">${liveKind==="tv"?"No TV show":"No anime"} found for “${escapeHtml(liveQ)}”.${liveKind==="tv"?"":"<br>Try the Japanese or English name."}</div>`;return;}
   B.innerHTML=`<div class="mini" style="margin:0 2px 10px">${list.length} result${list.length>1?"s":""} for “${escapeHtml(liveQ)}”</div><div class="lgrid">${list.map((x,i)=>liveCard(x,i,anim)).join("")}</div>`;
   B.querySelectorAll("[data-k]").forEach(el=>el.onclick=()=>openLive(list[+el.dataset.k]));
 }
@@ -1899,6 +1911,7 @@ setInterval(()=>{
   });
 },1000);
 async function openLive(x){
+  if(x.tvm)return openLiveTV(x);
   const mine=inMine(x),t=liveTarget(x),D=$("liveDetail");
   const paint=extra=>{
     D.innerHTML=`<div class="ldhead">${coverHtml({title:x.title,cover:x.cover})}<div style="min-width:0">
@@ -2269,6 +2282,95 @@ async function refreshTV(force){
 setInterval(()=>{if(document.visibilityState==="visible")refreshTV();},30*60000);
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")refreshTV();});
 setTimeout(()=>refreshTV(),6000);
+
+/* ---------- Live for TV shows (TVmaze schedule: US networks + streaming) ---------- */
+let liveKind="anime",tvLive=null,tvLoading=false,tvErr="",tvTab="trend",tvFilt="all";
+try{liveKind=localStorage.getItem("animelist_livekind")==="tv"?"tv":"anime";const c=JSON.parse(localStorage.getItem("animelist_tvlive")||"null");if(c&&c.v===1)tvLive=c;}catch(e){}
+const TV_SKIP=/News|Talk Show|Sports|Game Show|Panel Show|Variety|Award Show/;
+function tvShowMap(s){return {tvm:s.id,title:s.name||"?",alt:"",format:"TV",eps:null,st:s.status==="Ended"?"FINISHED":"RELEASING",score:s.rating&&s.rating.average?Math.round(s.rating.average*10):null,
+  genres:(s.genres||[]).slice(0,4),cover:s.image&&(s.image.medium||s.image.original)||null,pop:s.weight||0,net:(s.webChannel&&s.webChannel.name)||(s.network&&s.network.name)||"",
+  site:/^https?:\/\//.test(s.officialSite||"")?s.officialSite:"",sum:(s.summary||"").replace(/<[^>]+>/g,"").slice(0,320),prem:s.premiered||"",start:{}};}
+async function loadTvLive(){
+  if(tvLoading)return;tvLoading=true;tvErr="";const out=[],nap=ms=>new Promise(r=>setTimeout(r,ms)),day=n=>new Date(Date.now()+n*864e5).toISOString().slice(0,10);let ok=0;
+  try{
+    for(let n=-1;n<=9;n++){
+      for(const u of ["https://api.tvmaze.com/schedule?country=US&date="+day(n),"https://api.tvmaze.com/schedule/web?date="+day(n)]){
+        try{const r=await fetch(u);if(r.status===429){await nap(4000);continue;}if(!r.ok)continue;ok++;
+          (await r.json()).forEach(e=>{const s=e.show||(e._embedded&&e._embedded.show);if(!s||!e.airstamp||(e.type&&e.type!=="regular")||TV_SKIP.test(s.type||"")||(s.weight||0)<50)return;
+            if(s.language&&s.language!=="English"&&(s.weight||0)<97)return;
+            out.push({...tvShowMap(s),s:e.season,n:e.number,air:Math.floor(Date.parse(e.airstamp)/1000)});});
+        }catch(e){}
+        await nap(350);
+      }
+      if(n===1&&out.length&&!tvLive){tvLive={v:1,ts:0,eps:out.slice()};if(view==="live"&&liveKind==="tv")renderLive(true);}   // show the first days early
+    }
+    if(!ok)throw new Error("down");
+    tvLive={v:1,ts:Date.now(),eps:out};try{localStorage.setItem("animelist_tvlive",JSON.stringify(tvLive));}catch(e){}
+  }catch(e){tvErr="Can't reach the TV schedule right now"+(tvLive?" — showing the last saved one.":".");}
+  tvLoading=false;if(view==="live"&&liveKind==="tv")renderLive(true);
+}
+const seTxt=e=>"S"+e.s+" E"+e.n;
+function renderLiveTV(anim){
+  const sc=$("liveSeasons"),fc=$("liveFilter"),B=$("liveBody");sc.innerHTML="";fc.innerHTML="";
+  [["trend","🔥 Popular now"],["new","🆕 Premieres"],["week","📅 This week"]].forEach(([k,l])=>sc.appendChild(mkChip(l,tvTab===k,()=>{tvTab=k;renderLive(true);})));
+  if((!tvLive||Date.now()-tvLive.ts>3*3600000)&&!tvLoading&&navigator.onLine)setTimeout(loadTvLive,0);
+  if(!tvLive){B.innerHTML=tvErr?`<div class="empty">${tvErr}</div>`:`<div class="spinner" style="margin:40px auto 14px"></div><div class="mini" style="text-align:center">Loading the TV schedule — about 10 seconds the first time…</div>`;return;}
+  const now=Date.now()/1000,eps=tvLive.eps.slice().sort((a,b)=>a.air-b.air),all=[];
+  let html=tvErr?`<div class="mini" style="margin:0 2px 10px;color:var(--hold)">${tvErr}</div>`:tvLoading?`<div class="mini" style="margin:0 2px 10px">Updating…</div>`:"";
+  const withNext=e=>({...e,next:e.air>now?{ep:e.n,at:e.air,label:seTxt(e)}:null});
+  if(tvTab==="week"){
+    [["all","All"],["mine","In my list"]].forEach(([k,l])=>fc.appendChild(mkChip(l,tvFilt===k,()=>{tvFilt=k;renderLive(true);})));
+    let list=eps.filter(e=>e.air>now-6*3600&&e.air<now+7*86400&&(tvFilt==="mine"?inMine(e):e.pop>=80));
+    if(!list.length)html+=`<div class="empty">${tvFilt==="mine"?"None of your shows this week.":"Nothing here yet."}</div>`;
+    let dayL="";const today=new Date();today.setHours(0,0,0,0);
+    list.forEach((e,i)=>{const d=new Date(e.air*1000),dd=new Date(d);dd.setHours(0,0,0,0);const diff=Math.round((dd-today)/86400000);
+      const dl=diff<0?"Earlier":diff===0?"Today":diff===1?"Tomorrow":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][d.getDay()]+" "+d.getDate()+"/"+(d.getMonth()+1);
+      if(dl!==dayL){dayL=dl;html+=`<div class="dayhead">${dl}</div>`;}
+      const k=all.push(withNext(e))-1;
+      html+=`<div class="wrow" data-k="${k}" style="--i:${anim?Math.min(i,20):0}">${coverHtml({title:e.title,cover:e.cover})}<div style="flex:1;min-width:0"><div class="wt">${inMine(e)?"⭐ ":""}${escapeHtml(e.title)}</div>
+        <div class="ws">${seTxt(e)}${e.net?" · "+escapeHtml(e.net):""} · ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}</div></div>
+        <div class="wcd"><span class="cd" data-at="${e.air}">${cdText(e.air)}</span></div></div>`;});
+  }else{
+    let list;const seen=new Set();
+    if(tvTab==="trend"){ // one card per show: its next episode (or the latest one), most popular first
+      const by=new Map();eps.filter(e=>e.air>now-3*86400).forEach(e=>{const c=by.get(e.tvm);if(!c||c.air<=now)by.set(e.tvm,e);});
+      list=[...by.values()].sort((a,b)=>b.pop-a.pop||(b.score||0)-(a.score||0)).slice(0,20);
+      html+=`<div class="dayhead">🔥 Popular right now</div><div class="mini" style="margin:-4px 2px 10px">The 20 biggest shows with new episodes this week.</div>`;
+    }else{
+      list=eps.filter(e=>e.n===1&&e.air>now-2*86400&&!seen.has(e.tvm)&&seen.add(e.tvm)).sort((a,b)=>b.pop-a.pop).slice(0,30).sort((a,b)=>a.air-b.air);
+      html+=`<div class="dayhead">🆕 New shows and new seasons</div><div class="mini" style="margin:-4px 2px 10px">Premieres from the last two days to the next nine.</div>`;
+    }
+    if(!list.length)html+=`<div class="empty">Nothing here yet.</div>`;
+    html+=`<div class="lgrid">`+list.map((e,i)=>{const x=withNext(e),k=all.push(x)-1;
+      return liveCard(x,k,anim,{rank:tvTab==="trend"?i+1:(e.s===1?"NEW":"S"+e.s),sub:[e.net,tvTab==="trend"?seTxt(e):(e.s===1?"New series":"Season "+e.s)].filter(Boolean).join(" · ")});}).join("")+`</div>`;
+  }
+  html+=`<div class="mini" style="margin:14px 2px">From TVmaze: US TV and the big streaming services, English-language shows. Times are shown in your time. Updates every 3 hours.</div>`;
+  B.innerHTML=html;B.querySelectorAll("[data-k]").forEach(el=>el.onclick=()=>openLive(all[+el.dataset.k]));
+}
+function openLiveTV(x){
+  const mine=inMine(x),t=liveTarget(x),D=$("liveDetail");openLive.tok=(openLive.tok||0)+1;
+  const jw="https://www.justwatch.com/il/search?q="+encodeURIComponent(x.title),yt="https://www.youtube.com/results?search_query="+encodeURIComponent(x.title+" official trailer");
+  D.innerHTML=`<div class="ldhead">${coverHtml({title:x.title,cover:x.cover})}<div style="min-width:0">
+      <h3>${escapeHtml(x.title)}</h3>
+      <div class="mini" style="margin:6px 0 0">TV show${x.prem?" · since "+escapeHtml(x.prem.slice(0,4)):""}${x.score?" · ★ "+(x.score/10).toFixed(1):""}</div>
+      ${x.net?`<div class="mini" style="margin:4px 0 0">📺 On <b style="color:var(--text)">${escapeHtml(x.net)}</b></div>`:""}
+      <div class="gen">${(x.genres||[]).map(g=>`<span>${escapeHtml(g)}</span>`).join("")}</div></div></div>
+      ${t?`<div class="mini" style="margin:0 2px;font-weight:800;color:var(--text)">${t.label} in</div>
+        <div class="bigcd">${["d","h","m","s"].map((k,i)=>`<div><b data-at="${t.at}" data-part="${k}">${String(cdParts(t.at-Date.now()/1000)[k]).padStart(2,"0")}</b><small>${["days","hours","min","sec"][i]}</small></div>`).join("")}</div>
+        <div class="mini" style="margin:0 2px">${whenTxt(t.at)}</div>`:""}
+      <a class="tlink box" href="${yt}" target="_blank" rel="noopener">▶ Watch the trailer on YouTube ↗</a>
+      <a class="tlink box" style="margin-top:0" href="${jw}" target="_blank" rel="noopener">🍿 Where to watch it in Israel ↗</a>
+      ${x.site?`<a class="tlink" href="${escapeHtml(x.site)}" target="_blank" rel="noopener">Official page${x.net?" on "+escapeHtml(x.net):""} ↗</a>`:""}
+      <div class="ldesc">${escapeHtml(x.sum||"No description yet.")}</div>
+      ${mine?`<button class="ghostbtn brand" id="lOpen">Open in my list</button>`:`<button class="ghostbtn brand" id="lPlan">+ Plan to watch</button><button class="ghostbtn" id="lWatch">+ Watching</button>`}`;
+  if($("lOpen"))$("lOpen").onclick=()=>{closeSheet($("liveSheet"));setTimeout(()=>openDetail(mine.id),200);};
+  const add=st=>{const now=Date.now();
+    state.items.push({id:id(),title:x.title,type:"Anime",live:true,tvm:x.tvm,status:st,score:null,note:"",total:null,w:"",cover:x.cover||null,mal:null,ani:null,aniTried:true,malTried:true,
+      addedAt:now,startedAt:st==="watching"?now:null,completedAt:null,updatedAt:now});
+    save();okPop();toast("Added "+x.title+" to TV & Movies");closeSheet($("liveSheet"));refreshTV(true);renderLive();};
+  if($("lPlan"))$("lPlan").onclick=()=>add("plan");if($("lWatch"))$("lWatch").onclick=()=>add("watching");
+  openSheet($("liveSheet"));
+}
 
 window.appBack=function(){
   if($("liveSheet").classList.contains("on")){closeSheet($("liveSheet"));return true;}
