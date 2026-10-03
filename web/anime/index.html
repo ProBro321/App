@@ -410,6 +410,14 @@ try{if(!window.AndroidBridge&&!/[?&]stay/.test(location.search)&&matchMedia("(mi
   .tlink{display:inline-block;margin:2px 2px 10px;color:var(--muted);font-size:13px;font-weight:700;text-decoration:none;}
   .tlink:hover{color:var(--text);}
   .tlink.box{display:block;text-align:center;margin:14px 0 10px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--text);font-size:14.500px;}
+
+  /* ---------- star rating ---------- */
+  .scores{gap:0;}
+  .starbtn{position:relative;border:0;background:transparent;padding:4px 0;cursor:pointer;aspect-ratio:1;display:grid;place-items:center;transition:transform .12s;-webkit-appearance:none;appearance:none;}
+  .starbtn:active{transform:scale(.85);}
+  .starbtn svg{width:100%;max-width:44px;height:auto;display:block;grid-area:1/1;}
+  .starbtn .so{fill:#2b2836;stroke:#3a3648;stroke-width:1.6;stroke-linejoin:round;}
+  .starbtn .sf{fill:var(--gold);stroke:#f0a020;stroke-width:1.6;stroke-linejoin:round;filter:drop-shadow(0 0 5px rgba(255,201,77,.55));animation:bump .3s cubic-bezier(.22,1.6,.4,1);}
 </style>
 </head>
 <body>
