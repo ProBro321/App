@@ -536,6 +536,8 @@ try{if(!/[?&]stay/.test(location.search)&&Math.min(screen.width,screen.height)<=
   .navbtn.fx[data-nav="ai"] svg path:first-child{animation:nfTw .6s ease;}
   .navbtn.fx[data-nav="ai"] svg path:last-child{animation:nfTw .6s ease .15s backwards;}
   @keyframes nfTw{0%{transform:scale(1);}40%{transform:scale(.4) rotate(45deg);}75%{transform:scale(1.2);}100%{transform:none;}}
+
+  #list>.empty{grid-column:1/-1;text-align:center;}
 </style>
 </head>
 <body>
@@ -923,7 +925,7 @@ function normalize(s){
 }
 let state=load();
 function saveUi(){try{localStorage.setItem(KEY+"_ui",JSON.stringify({fStatus,fType,sortBy,fMode}));}catch(e){}}
-function loadUi(){try{const u=JSON.parse(localStorage.getItem(KEY+"_ui"));if(u){fStatus=u.fStatus||fStatus;fType=u.fType||fType;sortBy=u.sortBy||sortBy;fMode=u.fMode==="read"?"read":"watch";return true;}}catch(e){}return false;}
+function loadUi(){try{const u=JSON.parse(localStorage.getItem(KEY+"_ui"));if(u){fType=u.fType||fType;sortBy=u.sortBy||sortBy;fMode=u.fMode==="read"?"read":"watch";return true;}}catch(e){}return false;}
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.items)return normalize(s);}catch(e){}return fresh();}
 let lastTop=null;
 function save(){
@@ -1007,7 +1009,10 @@ function goto(v){
   document.querySelectorAll(".navbtn[data-nav]").forEach(b=>b.classList.toggle("on",b.dataset.nav===v));
   animList=true;animStats=true;render();window.scrollTo(0,0);
 }
-document.querySelectorAll(".navbtn[data-nav]").forEach(b=>b.onclick=()=>{navFx(b);goto(b.dataset.nav);});
+document.querySelectorAll(".navbtn[data-nav]").forEach(b=>b.onclick=()=>{navFx(b);
+  // the List button always lands on Watching / Reading
+  if(b.dataset.nav==="list"){fStatus="watching";fScore=null;fPick=null;query="";if($("q"))$("q").value="";if($("qClear"))$("qClear").classList.add("hidden");shown=60;animList=true;saveUi();window.scrollTo(0,0);}
+  goto(b.dataset.nav);});
 function navFx(b){
   if(typeof REDUCED!=="undefined"&&REDUCED)return;
   b.classList.remove("fx");void b.offsetWidth;b.classList.add("fx");clearTimeout(b._fx);b._fx=setTimeout(()=>b.classList.remove("fx"),1000);
