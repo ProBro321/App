@@ -362,6 +362,10 @@ try{if(!window.AndroidBridge&&!/[?&]stay/.test(location.search)&&matchMedia("(mi
   .modeseg button svg{width:20px;height:20px;flex:none;}
   .modeseg button small{font-weight:700;opacity:.7;font-size:12px;}
   .modeseg button.on{background:linear-gradient(160deg,var(--brand),var(--brand-dim));color:#fff;}
+
+  .lcard{position:relative;}
+  .rank{min-width:34px;height:34px;padding:0 8px;border-radius:12px;background:rgba(10,10,16,.82);color:#fff;font-weight:900;font-size:17px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.18);}
+  .rank.top{background:linear-gradient(160deg,#ffd76a,#f0a020);color:#231700;border-color:transparent;}
 </style>
 </head>
 <body>
@@ -1656,19 +1660,35 @@ function shiftSeason(o,n){let i=SEASONS.indexOf(o.s)+n,y=o.y;while(i<0){i+=4;y--
 const nowSeason=seasonOf(new Date());
 let liveTab=null,liveFilt="all",liveData={},livePage={},liveBusy=false,liveErr="";
 function liveTabs(){
-  return [{k:"week",l:"📅 This week"},...[-1,0,1,2].map(n=>{const o=shiftSeason(nowSeason,n);return {k:o.s+"-"+o.y,l:SEASON_NAME[o.s]+" "+o.y+(n===0?" · now":n===1?" · next":"")};})];
+  return [{k:"trend",l:"🔥 Trending"},{k:"hype",l:"⭐ Most anticipated"},{k:"week",l:"📅 This week"},...[-1,0,1,2].map(n=>{const o=shiftSeason(nowSeason,n);return {k:o.s+"-"+o.y,l:SEASON_NAME[o.s]+" "+o.y+(n===0?" · now":n===1?" · next":"")};})];
 }
 try{const c=JSON.parse(localStorage.getItem("animelist_live")||"null");if(c&&c.v===1)liveData=c.d||{};}catch(e){}
 function saveLiveCache(){try{localStorage.setItem("animelist_live",JSON.stringify({v:1,d:liveData}));}catch(e){}}
-const LIVE_FIELDS=`id idMal format episodes status averageScore genres title{romaji english} coverImage{large} startDate{year month day} nextAiringEpisode{episode airingAt}`;
+const LIVE_FIELDS=`id idMal format episodes status averageScore popularity genres title{romaji english} coverImage{large} startDate{year month day} nextAiringEpisode{episode airingAt}`;
 function liveMap(m){
   return {ani:m.id,mal:m.idMal||null,title:(m.title&&(m.title.english||m.title.romaji))||"?",alt:m.title&&m.title.english&&m.title.romaji!==m.title.english?m.title.romaji:"",
     format:m.format||"",eps:m.episodes||null,st:m.status||"",score:m.averageScore||null,genres:(m.genres||[]).slice(0,4),cover:m.coverImage&&m.coverImage.large||null,
-    start:m.startDate||{},next:m.nextAiringEpisode?{ep:m.nextAiringEpisode.episode,at:m.nextAiringEpisode.airingAt}:null};
+    pop:m.popularity||0,start:m.startDate||{},next:m.nextAiringEpisode?{ep:m.nextAiringEpisode.episode,at:m.nextAiringEpisode.airingAt}:null};
 }
 async function loadLive(k,more){
   if(liveBusy)return;liveBusy=true;liveErr="";
   try{
+    if(k==="trend"||k==="hype"){
+      // one request: what's hot right now, most-followed of this season, and most-awaited upcoming shows (AniList)
+      const F=`media(type:ANIME,isAdult:false,`,j=await aniQuery(`query($s:MediaSeason,$y:Int){trend:Page(perPage:10){${F}sort:TRENDING_DESC){${LIVE_FIELDS}}}
+        season:Page(perPage:10){${F}season:$s,seasonYear:$y,sort:POPULARITY_DESC){${LIVE_FIELDS}}}
+        hype:Page(perPage:20){${F}status:NOT_YET_RELEASED,sort:POPULARITY_DESC){${LIVE_FIELDS}}}}`,{s:nowSeason.s,y:nowSeason.y});
+      const old=liveData.trend||{};
+      liveData.trend=liveData.hype={ts:Date.now(),trend:j.data.trend.media.map(liveMap),season:j.data.season.media.map(liveMap),hype:j.data.hype.media.map(liveMap),malAir:old.malAir||{},malUp:old.malUp||{}};
+      saveLiveCache();liveBusy=false;if(view==="live")renderLive(true);
+      // second opinion from MyAnimeList (best effort): its "top airing" and "top upcoming" charts
+      const pack=liveData.trend;
+      for(const [key,filter] of [["malAir","airing"],["malUp","upcoming"]]){
+        try{const r=await fetch(`https://api.jikan.moe/v4/top/anime?filter=${filter}&limit=25&sfw=true`);if(r.ok){const d=(await r.json()).data||[],m={};d.forEach((x,i)=>{m[x.mal_id]=i+1;});pack[key]=m;}}catch(e){}
+        await new Promise(r=>setTimeout(r,700));
+      }
+      saveLiveCache();if(view==="live")renderLive();return;
+    }
     if(k==="week"){
       const now=Math.floor(Date.now()/1000);let list=[],page=1,has=true;
       while(has&&page<=4){
@@ -1708,7 +1728,7 @@ function liveTarget(x){
   return null;
 }
 function renderLive(anim){
-  if(!liveTab)liveTab=(()=>{const n=shiftSeason(nowSeason,1);return n.s+"-"+n.y;})();
+  if(!liveTab)liveTab="trend";
   $("liveSeasons").classList.toggle("hidden",!!liveQ);$("liveFilter").classList.toggle("hidden",!!liveQ);
   if(liveQ){renderLiveSearch(anim);return;}
   const sc=$("liveSeasons");sc.innerHTML="";
@@ -1716,8 +1736,20 @@ function renderLive(anim){
   const onChip=sc.querySelector(".chip.on");if(onChip)sc.scrollLeft=Math.max(0,onChip.offsetLeft-sc.offsetLeft-16);
   const fc=$("liveFilter");fc.innerHTML="";
   const B=$("liveBody");const data=liveData[liveTab];
-  if((!data||Date.now()-data.ts>60*60000)&&!liveBusy&&navigator.onLine)setTimeout(()=>loadLive(liveTab),0);
+  if((!data||Date.now()-data.ts>((liveTab==="trend"||liveTab==="hype")?30:60)*60000)&&!liveBusy&&navigator.onLine)setTimeout(()=>loadLive(liveTab),0);
   if(!data){B.innerHTML=liveErr?`<div class="empty">${liveErr}</div>`:`<div class="spinner" style="margin:40px auto"></div>`;return;}
+  if(liveTab==="trend"||liveTab==="hype"){
+    const kfmt=n=>n>=1e6?(n/1e6).toFixed(1)+"M":n>=1000?Math.round(n/1000)+"k":String(n||0);
+    let all=[],html=liveErr?`<div class="mini" style="margin:0 2px 10px;color:var(--hold)">${liveErr}</div>`:"";
+    const sect=(title,sub,arr,mal,malLabel,what)=>{if(!arr||!arr.length)return;html+=`<div class="dayhead">${title}</div><div class="mini" style="margin:-4px 2px 10px">${sub}</div><div class="lgrid">`+
+      arr.map((x,i)=>{const k=all.push(x)-1,r=mal&&x.mal&&mal[x.mal];return liveCard(x,k,anim,{rank:i+1,sub:`${kfmt(x.pop)} ${what}${r?` · MAL #${r}`:""}`});}).join("")+`</div>`;};
+    if(liveTab==="trend"){
+      sect("🔥 Trending right now","The 10 shows with the most activity over the last few days.",data.trend,data.malAir,"on MAL airing","following");
+      sect("👀 Most watched this season","The 10 most-followed shows of "+SEASON_NAME[nowSeason.s]+" "+nowSeason.y+".",data.season,data.malAir,"on MAL airing","following");
+    }else sect("⭐ Most anticipated","Not out yet — ranked by how many people are waiting for them.",data.hype,data.malUp,"most awaited on MAL","waiting");
+    html+=`<div class="mini" style="margin:14px 2px">Numbers are from AniList (people who added the show). "MAL #3" means it is 3rd on MyAnimeList's own chart (top airing, or most awaited) — a second opinion. Updates every 30 minutes.</div>`;
+    B.innerHTML=html;B.querySelectorAll("[data-k]").forEach(el=>el.onclick=()=>openLive(all[+el.dataset.k]));return;
+  }
   const filts=liveTab==="week"?[["all","All"],["mine","In my list"]]:[["all","All"],["airing","Airing"],["upcoming","Not started"],["mine","In my list"]];
   if(!filts.some(f=>f[0]===liveFilt))liveFilt="all";
   filts.forEach(([k,l])=>fc.appendChild(mkChip(l,liveFilt===k,()=>{liveFilt=k;renderLive(true);})));
@@ -1746,13 +1778,13 @@ function renderLive(anim){
   B.querySelectorAll("[data-k]").forEach(el=>el.onclick=()=>openLive(list[+el.dataset.k]));
   if($("liveMore"))$("liveMore").onclick=()=>{$("liveMore").textContent="Loading…";loadLive(liveTab,true);};
 }
-function liveCard(x,i,anim){
+function liveCard(x,i,anim,extra){
       const t=liveTarget(x),mine=inMine(x);
       const box=t?`<div class="cdbox"><div class="cl">${t.label} in</div><div class="cd" data-at="${t.at}">${cdText(t.at)}</div></div>`
         :`<div class="cdbox done"><div class="cd">${x.st==="FINISHED"?"✓ Finished":x.st==="RELEASING"?"Airing":startTxt(x)}</div></div>`;
       return `<div class="lcard" data-k="${i}" style="--i:${anim?Math.min(i,16):0}">${coverHtml({title:x.title,cover:x.cover})}
-        <div class="lcd"><span class="ltag">${fmtName(x.format)}${x.eps?" · "+x.eps+" ep":""}</span>${mine?`<span class="ltag mine">In list</span>`:x.score?`<span class="ltag">★ ${(x.score/10).toFixed(1)}</span>`:""}</div>
-        <div class="linfo"><div class="lt">${escapeHtml(x.title)}</div><div class="ls">${escapeHtml(x.genres.slice(0,2).join(" · "))||startTxt(x)}</div>${box}</div></div>`;
+        <div class="lcd">${extra?`<span class="rank${extra.rank<=3?" top":""}">${extra.rank}</span>`:`<span class="ltag">${fmtName(x.format)}${x.eps?" · "+x.eps+" ep":""}</span>`}${mine?`<span class="ltag mine">In list</span>`:x.score?`<span class="ltag">★ ${(x.score/10).toFixed(1)}</span>`:""}</div>
+        <div class="linfo"><div class="lt">${escapeHtml(x.title)}</div><div class="ls">${extra?escapeHtml(extra.sub):escapeHtml(x.genres.slice(0,2).join(" · "))||startTxt(x)}</div>${box}</div></div>`;
 }
 /* search any anime on AniList */
 let liveQ="",liveSR={q:"",list:[],err:""},liveST=null;
