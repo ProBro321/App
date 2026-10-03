@@ -370,6 +370,25 @@ try{if(!window.AndroidBridge&&!/[?&]stay/.test(location.search)&&matchMedia("(mi
   .tapf{cursor:pointer;border-radius:8px;padding:2px 5px;margin:-2px -5px;}
   .tapf:hover,.tapf:active{background:rgba(255,255,255,.09);}
   .scorebtn.half{background:linear-gradient(90deg,var(--gold) 50%,var(--surface) 50%);border-color:var(--gold);color:#fff;text-shadow:0 1px 3px #000;animation:bump .35s cubic-bezier(.22,1.6,.4,1);}
+
+  /* ---------- menu click effect ---------- */
+  .navbtn .ic{overflow:visible;}
+  .navring,.navspark{position:absolute;left:50%;top:50%;pointer-events:none;}
+  .navring{width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:2px solid var(--brand);animation:navring .55s ease-out forwards;}
+  @keyframes navring{from{transform:scale(.3);opacity:.9;}to{transform:scale(1.9);opacity:0;}}
+  /* phone: the icon hops and lands with a soft ripple */
+  .navspark{display:none;}
+  .navbtn.fx .ic svg{animation:navhop .5s cubic-bezier(.3,1.5,.5,1)!important;}
+  @keyframes navhop{0%{transform:none;}30%{transform:translateY(-11px) scale(1.12,.92);}60%{transform:translateY(0) scale(.9,1.12);}80%{transform:translateY(-3px);}100%{transform:none;}}
+  .navbtn.fx{animation:navlabel .5s ease;}
+  @keyframes navlabel{40%{letter-spacing:.6px;}}
+
+  .scores{gap:0;}
+  .starbtn{position:relative;border:0;background:transparent;padding:4px 0;cursor:pointer;aspect-ratio:1;display:grid;place-items:center;transition:transform .12s;}
+  .starbtn:active{transform:scale(.85);}
+  .starbtn svg{width:100%;max-width:44px;height:auto;display:block;grid-area:1/1;}
+  .starbtn .so{fill:#2b2836;stroke:#3a3648;stroke-width:1.6;stroke-linejoin:round;}
+  .starbtn .sf{fill:url(#starGold) var(--gold);fill:var(--gold);stroke:#f0a020;stroke-width:1.6;stroke-linejoin:round;filter:drop-shadow(0 0 5px rgba(255,201,77,.55));animation:bump .3s cubic-bezier(.22,1.6,.4,1);}
 </style>
 </head>
 <body>
@@ -841,7 +860,14 @@ function goto(v){
   document.querySelectorAll(".navbtn[data-nav]").forEach(b=>b.classList.toggle("on",b.dataset.nav===v));
   animList=true;animStats=true;render();window.scrollTo(0,0);
 }
-document.querySelectorAll(".navbtn[data-nav]").forEach(b=>b.onclick=()=>goto(b.dataset.nav));
+document.querySelectorAll(".navbtn[data-nav]").forEach(b=>b.onclick=()=>{navFx(b);goto(b.dataset.nav);});
+function navFx(b){
+  const ic=b.querySelector(".ic");if(!ic||(typeof REDUCED!=="undefined"&&REDUCED))return;
+  ic.querySelectorAll(".navring,.navspark").forEach(e=>e.remove());b.classList.remove("fx");void b.offsetWidth;b.classList.add("fx");
+  const r=document.createElement("span");r.className="navring";ic.appendChild(r);
+  for(let i=0;i<8;i++){const s=document.createElement("span");s.className="navspark";s.style.setProperty("--a",(i*45+22)+"deg");ic.appendChild(s);}
+  setTimeout(()=>{ic.querySelectorAll(".navring,.navspark").forEach(e=>e.remove());b.classList.remove("fx");},750);
+}
 function render(){
   if(view==="list")renderList();
   if(view==="top")renderTop();
@@ -1018,8 +1044,9 @@ function renderDetail(){
       </div></div>
     <div class="chiprow" id="dStatus"></div>
     <h4>Your score</h4>
-    <div class="scores" id="dScore">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="scorebtn ${it.score===n?"on":it.score===n-.5?"half":it.score&&n<it.score?"fill":""}" data-n="${n}">${it.score===n-.5?(n-1?n-1:"")+"½":n}</button>`).join("")}</div>
-    <div class="mini" style="margin:6px 2px 0">${it.score?`Your score: <b style="color:var(--gold)">★ ${it.score}</b> · `:""}Tap a number again for a half star (7 → 6½). Tap a third time to clear.</div>
+    <div class="scores" id="dScore">${[1,2,3,4,5,6,7,8,9,10].map(n=>{const f=!it.score?0:it.score>=n?1:it.score===n-.5?.5:0,P='<path d="M12 2.6l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.5 6.1 20.6l1.2-6.5L2.5 9.5l6.6-.9z"/>';
+      return `<button class="starbtn${f?" lit":""}" data-n="${n}" aria-label="${n} stars"><svg viewBox="0 0 24 24" class="so">${P}</svg>${f?`<svg viewBox="0 0 24 24" class="sf" style="${f<1?"clip-path:inset(0 50% 0 0)":""}">${P}</svg>`:""}</button>`;}).join("")}</div>
+    <div class="mini" style="margin:6px 2px 0">${it.score?`<b style="color:var(--gold);font-size:15px">★ ${it.score}</b> out of 10 · `:""}Tap the left side of a star for a half, the right side for a full one. Tap your score again to clear it.</div>
     <div class="toprow ${topIdx>=0?"on":""}" id="dTop"><span>⭐ ${topIdx>=0?"In your Top 10 — #"+(topIdx+1):"Add to my Top 10"}</span><span>${topIdx>=0?"Remove":"Add"}</span></div>
     ${it.type==="Movie"?"":`
     <h4>${it.type==="Manga"?"Chapters":"Episodes"}</h4>
@@ -1047,7 +1074,7 @@ function renderDetail(){
   STATUSES.forEach(s=>sc.appendChild(mkChip(stLabel(s.k,it.type),it.status===s.k,()=>setStatus(it,s.k))));
   $("dTitle").onchange=e=>{const v=e.target.value.replace(/\s+/g," ").trim();if(v){it.title=v;touch(it);save();}};
   $("dType").querySelectorAll("button").forEach(b=>b.onclick=()=>{it.type=b.dataset.t;touch(it);save();renderDetail();});
-  $("dScore").querySelectorAll("button").forEach(b=>b.onclick=()=>{const n=+b.dataset.n;it.score=it.score===n?n-.5:it.score===n-.5?null:n;touch(it);save();renderDetail();});
+  $("dScore").querySelectorAll("button").forEach(b=>b.onclick=e=>{const r=b.getBoundingClientRect(),n=+b.dataset.n,v=(e.clientX-r.left)<r.width/2?n-.5:n;it.score=it.score===v?null:v;touch(it);save();renderDetail();});
   $("dTop").onclick=()=>toggleTop(it);
   $("dNote").onchange=e=>{it.note=e.target.value;touch(it);save();};
   $("dMal").onclick=()=>malPickFor(it);
