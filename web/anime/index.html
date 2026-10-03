@@ -366,6 +366,10 @@ try{if(!window.AndroidBridge&&!/[?&]stay/.test(location.search)&&matchMedia("(mi
   .lcard{position:relative;}
   .rank{min-width:34px;height:34px;padding:0 8px;border-radius:12px;background:rgba(10,10,16,.82);color:#fff;font-weight:900;font-size:17px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.18);}
   .rank.top{background:linear-gradient(160deg,#ffd76a,#f0a020);color:#231700;border-color:transparent;}
+
+  .tapf{cursor:pointer;border-radius:8px;padding:2px 5px;margin:-2px -5px;}
+  .tapf:hover,.tapf:active{background:rgba(255,255,255,.09);}
+  .scorebtn.half{background:linear-gradient(90deg,var(--gold) 50%,var(--surface) 50%);border-color:var(--gold);color:#fff;text-shadow:0 1px 3px #000;animation:bump .35s cubic-bezier(.22,1.6,.4,1);}
 </style>
 </head>
 <body>
@@ -742,7 +746,7 @@ function normalize(s){
     if(!it.id)it.id=id();
     if(!TYPES.includes(it.type))it.type="Anime";
     if(!STATUSES.some(x=>x.k===it.status))it.status="completed";
-    it.score=it.score>=1&&it.score<=10?Math.round(it.score):null;
+    it.score=it.score>=0.5&&it.score<=10?Math.round(it.score*2)/2:null;
     it.total=it.total>0?Math.floor(it.total):null;
     it.w=typeof it.w==="string"?it.w:"";
     if(!it.addedAt)it.addedAt=Date.now();
@@ -848,7 +852,7 @@ function render(){
 }
 
 /* ---------- LIST ---------- */
-let fStatus="watching",fType="all",sortBy="recent",query="",shown=60,animList=true,fMode="watch";
+let fStatus="watching",fType="all",sortBy="recent",query="",shown=60,animList=true,fMode="watch",fScore=null;
 const inMode=it=>(it.type==="Manga")===(fMode==="read");
 const rollMem={};
 function rollTo(el,key,value){
@@ -864,7 +868,7 @@ function mkChip(label,on,fn,count){
 function filtered(){
   const q=norm(query);
   const ft=fMode==="read"||fType==="Manga"?"all":fType;
-  let list=state.items.filter(it=>q?norm(it.title).includes(q)||norm(it.note).includes(q):(inMode(it)&&(ft==="all"||it.type===ft)&&(fStatus==="all"||it.status===fStatus)));
+  let list=state.items.filter(it=>q?norm(it.title).includes(q)||norm(it.note).includes(q):fScore!=null?Math.floor(it.score||0)===fScore:(inMode(it)&&(ft==="all"||it.type===ft)&&(fStatus==="all"||it.status===fStatus)));
   const recentTs=it=>Math.max(it.updatedAt||0,it.completedAt||0,it.startedAt||0,it.addedAt||0);
   if(sortBy==="recent")list.sort((a,b)=>recentTs(b)-recentTs(a));
   else if(sortBy==="az")list.sort((a,b)=>a.title.localeCompare(b.title));
@@ -887,8 +891,9 @@ function renderList(){
   rollTo($("sW"),"w"+fMode,n("watching"));rollTo($("sC"),"c"+fMode,n("completed"));rollTo($("sE"),"e"+fMode,eps);
   updateCoverBar();
   const sc=$("statusChips");sc.innerHTML="";
+  if(fScore!=null&&!query)sc.appendChild(mkChip("★ "+fScore+"  ✕",true,()=>{fScore=null;animList=true;renderList();},state.items.filter(i=>Math.floor(i.score||0)===fScore).length));
   [...STATUSES.map(s=>[s.k,read&&s.mlabel?s.mlabel:s.label]),["all","All"]].forEach(([k,l])=>
-    sc.appendChild(mkChip(l,fStatus===k&&!query,()=>{fStatus=k;shown=60;animList=true;saveUi();renderList();},k==="all"?mine.length:n(k))));
+    sc.appendChild(mkChip(l,fStatus===k&&!query&&fScore==null,()=>{fStatus=k;fScore=null;shown=60;animList=true;saveUi();renderList();},k==="all"?mine.length:n(k))));
   sc.classList.toggle("hidden",!!query);
   const tc=$("typeChips");tc.innerHTML="";
   if(!read){[["all","All types"],["Anime","Anime"],["Movie","Movies"]].forEach(([k,l])=>tc.appendChild(mkChip(l,(fType==="Manga"?"all":fType)===k,()=>{fType=k;shown=60;animList=true;saveUi();renderList();})));
@@ -928,7 +933,7 @@ function row(it,fromPct){
   r.innerHTML=`${coverHtml(it)}
     <div class="rmid">
       <div class="rtitle">${inTop>=0?`<span style="color:var(--gold)">#${inTop+1}</span> `:""}${escapeHtml(it.title)}</div>
-      <div class="rsub"><span class="dot" style="background:${st.c}"></span>${stLabel(it.status,it.type)} · ${it.type}${it.score?` · <span class="star">★ ${it.score}</span>`:""}</div>
+      <div class="rsub"><span class="tapf" data-f="st"><span class="dot" style="background:${st.c}"></span>${stLabel(it.status,it.type)}</span> · ${it.type}${it.score?` · <span class="star tapf" data-f="sc">★ ${it.score}</span>`:""}</div>
       ${prog}
     </div>
     ${(it.status==="watching"||it.status==="plan")&&it.type!=="Movie"&&p.next&&!notOut?`<button class="plus1">+1 ${unit(it.type)}</button>`:""}`;
@@ -937,6 +942,10 @@ function row(it,fromPct){
   wrap.innerHTML=canPlus?`<div class="sbg">+1 ${unit(it.type)} ${p.next} ✓</div>`:"";
   wrap.appendChild(r);
   r.onclick=()=>{if(wrap._sw){wrap._sw=false;return;}openDetail(it.id);};
+  r.querySelectorAll(".tapf").forEach(t=>t.onclick=e=>{e.stopPropagation();if(wrap._sw)return;
+    if(t.dataset.f==="sc"){fScore=Math.floor(it.score);toast("Showing everything you gave ★ "+fScore);}
+    else{fScore=null;fStatus=it.status;fMode=it.type==="Manga"?"read":"watch";toast("Showing: "+stLabel(it.status,it.type));}
+    query="";$("q").value="";shown=60;animList=true;saveUi();renderList();window.scrollTo({top:0,behavior:"smooth"});});
   const pb=r.querySelector(".plus1");
   if(pb)pb.onclick=e=>{e.stopPropagation();plusOne(it);};
   if(canPlus)attachSwipe(wrap,r,()=>plusOne(it));
@@ -1009,7 +1018,8 @@ function renderDetail(){
       </div></div>
     <div class="chiprow" id="dStatus"></div>
     <h4>Your score</h4>
-    <div class="scores" id="dScore">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="scorebtn ${it.score===n?"on":it.score&&n<it.score?"fill":""}" data-n="${n}">${n}</button>`).join("")}</div>
+    <div class="scores" id="dScore">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="scorebtn ${it.score===n?"on":it.score===n-.5?"half":it.score&&n<it.score?"fill":""}" data-n="${n}">${it.score===n-.5?(n-1?n-1:"")+"½":n}</button>`).join("")}</div>
+    <div class="mini" style="margin:6px 2px 0">${it.score?`Your score: <b style="color:var(--gold)">★ ${it.score}</b> · `:""}Tap a number again for a half star (7 → 6½). Tap a third time to clear.</div>
     <div class="toprow ${topIdx>=0?"on":""}" id="dTop"><span>⭐ ${topIdx>=0?"In your Top 10 — #"+(topIdx+1):"Add to my Top 10"}</span><span>${topIdx>=0?"Remove":"Add"}</span></div>
     ${it.type==="Movie"?"":`
     <h4>${it.type==="Manga"?"Chapters":"Episodes"}</h4>
@@ -1037,7 +1047,7 @@ function renderDetail(){
   STATUSES.forEach(s=>sc.appendChild(mkChip(stLabel(s.k,it.type),it.status===s.k,()=>setStatus(it,s.k))));
   $("dTitle").onchange=e=>{const v=e.target.value.replace(/\s+/g," ").trim();if(v){it.title=v;touch(it);save();}};
   $("dType").querySelectorAll("button").forEach(b=>b.onclick=()=>{it.type=b.dataset.t;touch(it);save();renderDetail();});
-  $("dScore").querySelectorAll("button").forEach(b=>b.onclick=()=>{const n=+b.dataset.n;it.score=it.score===n?null:n;touch(it);save();renderDetail();});
+  $("dScore").querySelectorAll("button").forEach(b=>b.onclick=()=>{const n=+b.dataset.n;it.score=it.score===n?n-.5:it.score===n-.5?null:n;touch(it);save();renderDetail();});
   $("dTop").onclick=()=>toggleTop(it);
   $("dNote").onchange=e=>{it.note=e.target.value;touch(it);save();};
   $("dMal").onclick=()=>malPickFor(it);
@@ -1109,6 +1119,7 @@ function setStatus(it,k){
     if(prev!=="completed")okPop();
   }
   if(k==="watching")it.startedAt=it.startedAt||Date.now();
+  fStatus=k;fScore=null;fMode=it.type==="Manga"?"read":"watch";saveUi();
   touch(it);save();renderDetail();
 }
 function toggleTop(it){
@@ -1540,8 +1551,8 @@ function renderStats(){
     <div class="panel"><h4>Completed per year</h4><div id="yearBars"></div></div>`;
   const bars=(el,rows,color)=>{const max=Math.max(1,...rows.map(r=>r[1]));
     $(el).innerHTML=rows.map(([l,v,col],i)=>`<div class="brow" style="--i:${i}"><span class="lb">${escapeHtml(l)}</span><span class="bt"><i style="width:${v/max*100}%;background:${col||color}"></i></span><span class="ct num">${v}</span></div>`).join("");};
-  bars("scoreBars",[10,9,8,7,6,5,4,3,2,1].map(n=>["★"+n,scored.filter(i=>i.score===n).length]),"var(--gold)");
-  $("scoreBars").querySelectorAll(".brow").forEach((r,i)=>{r.style.cursor="pointer";r.onclick=()=>{fStatus="all";sortBy="score";query="";goto("list");};});
+  bars("scoreBars",[10,9,8,7,6,5,4,3,2,1].map(n=>["★"+n,scored.filter(i=>Math.floor(i.score)===n).length]),"var(--gold)");
+  $("scoreBars").querySelectorAll(".brow").forEach((r,i)=>{r.style.cursor="pointer";r.onclick=()=>{fScore=10-i;query="";goto("list");};});
   bars("statusBars",STATUSES.map(s=>[s.label.split(" ")[0],c(s.k),s.c]));
   $("statusBars").querySelectorAll(".lb").forEach(l=>{l.style.width="74px";l.style.flex="0 0 74px";});
   B.querySelectorAll(".tile,.panel").forEach((el,i)=>el.style.setProperty("--i",i));
