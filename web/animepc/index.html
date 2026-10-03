@@ -506,8 +506,9 @@ try{if(!/[?&]stay/.test(location.search)&&Math.min(screen.width,screen.height)<=
   .rank{min-width:34px;height:34px;padding:0 8px;border-radius:12px;background:rgba(10,10,16,.82);color:#fff;font-weight:900;font-size:17px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.18);}
   .rank.top{background:linear-gradient(160deg,#ffd76a,#f0a020);color:#231700;border-color:transparent;}
 
-  .tapf{cursor:pointer;border-radius:8px;padding:2px 5px;margin:-2px -5px;}
-  .tapf:hover,.tapf:active{background:rgba(255,255,255,.09);}
+  .tapf{cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:color .15s;}
+  .tapf:hover,.tapf:active{color:var(--text);text-decoration:underline;text-underline-offset:3px;}
+  .star.tapf:hover,.star.tapf:active{color:var(--gold);}
   .scorebtn.half{background:linear-gradient(90deg,var(--gold) 50%,var(--surface) 50%);border-color:var(--gold);color:#fff;text-shadow:0 1px 3px #000;animation:bump .35s cubic-bezier(.22,1.6,.4,1);}
 
   /* ---------- menu click: each icon does its own small thing ---------- */
